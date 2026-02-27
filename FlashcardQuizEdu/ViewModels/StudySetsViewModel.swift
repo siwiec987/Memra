@@ -9,30 +9,35 @@ import Foundation
 
 @Observable
 class StudySetsViewModel {
-//    @ObservationIgnored let title: String
     @ObservationIgnored let studySetService: StudySetService
     @ObservationIgnored let category: CategoryEntity
     
     var studySets: [StudySetEntity] = []
     var tags: [TagEntity] = []
     
+    private(set) var selectedTags: [TagEntity] = []
+    
     var sortOption: StudySetService.SortOption = .name {
         didSet {
+            reload()
             UserDefaults.standard.set(sortOption.rawValue, forKey: "StudySetsSortOption")
         }
     }
     var sortDirection: SortDirection = .descending {
         didSet {
+            reload()
             UserDefaults.standard.set(sortDirection.rawValue, forKey: "StudySetsSortDirection")
         }
     }
     
-    var query = ""
+    var query = "" {
+        didSet {
+            reload()
+        }
+    }
     
-//    private var _selectedTags: Set<TagEntity> = []
-    
-    var categoryName: String {
-        return category.name ?? "Unknown"
+    var title: String {
+        category.wrappedName
     }
     
     init(
@@ -51,68 +56,45 @@ class StudySetsViewModel {
             self.sortDirection = direction
         }
         
-        self.studySets = studySetService.fetchAll(sortedBy: sortOption, direction: sortDirection)
-        let tagSet = Set(studySets.flatMap { ($0.tags as? Set<TagEntity>) ?? [] }) // tagSet ma być setem mordzia
+        reload()
+        let tagSet = studySets.reduce(into: Set<TagEntity>()) { result, set in
+            result.formUnion(set.tagsSet)
+        }
         self.tags = tagSet.sorted {
-            $0.studySetCount != $1.studySetCount ? $0.studySetCount > $1.studySetCount : $0.name ?? "" > $1.name ?? ""
+            ($0.studySetCount != $1.studySetCount) ? ($0.studySetCount > $1.studySetCount) : ($0.wrappedName > $1.wrappedName)
         }
     }
     
-    let availableTags: [TagEntity] = []
-    let allTags: [TagEntity] = []
-    var selectedTags: [TagEntity] = []
-//    var selectedTags: [TagEntity] {
-//        _selectedTags.sorted { $0.name ?? "" > $1.name ?? "" }
-//    }
+    var allTags: [TagEntity] {
+        selectedTags + tags.filter { !selectedTags.contains($0) }
+    }
     
-//    var availableTags: [TagEntity] {
-//        var tagCounts: [TagEntity : Int] = [:]
-//        
-//        for set in studySets {
-//            let tagSet = tagSetFor(set: set)
-//            for tag in tagSet {
-//                tagCounts[tag, default: 0] += 1
-//            }
-//        }
-//
-//        let filtered = tagCounts.filter { !_selectedTags.contains($0.key) }
-//        let sorted = filtered.sorted { $0.key.name ?? "" > $1.key.name ?? "" }
-//        
-//        return sorted.sorted { $0.value > $1.value }.map { $0.key }
-//    }
-    
-//    var allTags: [TagEntity] {
-//        selectedTags + availableTags
-//    }
-    
-//    var filteredStudySets: [StudySetEntity] {
-//        let filtered = _selectedTags.isEmpty ? studySets : studySets.filter { set in
-//            let tagSet = tagSetFor(set: set)
-//            return !_selectedTags.isDisjoint(with: tagSet)
-//        }
-//        
-//        return query.isEmpty ? filtered : filtered.filter { set in
-//            set.name?.localizedStandardContains(query) ?? false
-//        }
-//    }
+    private func reload() {
+        studySets = studySetService.fetchFiltered(
+            tags: selectedTags,
+            category: category,
+            containing: query,
+            sortedBy: sortOption,
+            direction: sortDirection
+        )
+    }
     
     func toggleTag(_ tag: TagEntity) {
-//        if _selectedTags.contains(tag) {
-//            _selectedTags.remove(tag)
-//        } else {
-//            _selectedTags.insert(tag)
-//        }
+        if selectedTags.contains(tag) {
+            selectedTags.removeAll { $0 == tag }
+        } else {
+            selectedTags.append(tag)
+        }
+        
+        reload()
     }
-//    
+    
     func clearTags() {
-//        _selectedTags.removeAll()
+        selectedTags.removeAll()
+        reload()
     }
     
     func directionLabel(for direction: SortDirection) -> String {
         sortOption.directionLabel(for: direction)
     }
-    
-//    private func tagSetFor(set: StudySetEntity) -> Set<TagEntity> {
-//        (set.tags as? Set<TagEntity>) ?? []
-//    }
 }

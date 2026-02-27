@@ -18,30 +18,6 @@ struct StudySetsView: View {
     
     var body: some View {
         List {
-//            if !vm.tags.isEmpty {
-//                Section {
-//                    ScrollView(.horizontal, showsIndicators: false) {
-//                        HStack {
-//                            TagButton(name: "Wszystkie", isSelected: vm.selectedTags.isEmpty) {
-//                                withAnimation(tagAnimation) {
-//                                    vm.clearTags()
-//                                }
-//                            }
-//                            
-//                            ForEach(vm.tags, id: \.self) { tag in
-//                                TagButton(name: tag.name ?? "", isSelected: vm.selectedTags.contains(tag)) {
-//                                    withAnimation(tagAnimation) {
-//                                        vm.toggleTag(tag)
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    }
-//                    .listRowInsets(.init())
-//                    .listRowBackground(Color.clear)
-//                }
-//            }
-            
             Section {
                 if vm.studySets.isEmpty && !vm.query.isEmpty {
                     ContentUnavailableView("Brak wyników", systemImage: "magnifyingglass", description: Text("Sprawdź pisownię lub zmień filtry"))
@@ -59,11 +35,10 @@ struct StudySetsView: View {
                 }
             }
         }
-//        .listSectionSpacing(20)
-        .navigationTitle(vm.categoryName)
+        .navigationTitle(vm.title)
         .toolbar {
             ToolbarItem {
-                SortingPicker(optionSelection: $vm.sortOption, directionSelection: $vm.sortDirection, directionLabel: vm.directionLabel(for:))
+                SortingPicker(optionSelection: $vm.sortOption, directionSelection: $vm.sortDirection, directionLabel: vm.directionLabel)
                 .tint(.none)
             }
             ToolbarSpacer(.fixed)
@@ -72,23 +47,25 @@ struct StudySetsView: View {
             }
         }
         .safeAreaBar(edge: .top) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack {
-                    TagButton(name: "Wszystkie", isSelected: vm.selectedTags.isEmpty) {
-                        withAnimation(tagAnimation) {
-                            vm.clearTags()
-                        }
-                    }
-                    
-                    ForEach(vm.tags, id: \.self) { tag in
-                        TagButton(name: tag.name ?? "", isSelected: vm.selectedTags.contains(tag)) {
+            if !vm.tags.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack {
+                        TagButton(name: "Wszystkie", isSelected: vm.selectedTags.isEmpty) {
                             withAnimation(tagAnimation) {
-                                vm.toggleTag(tag)
+                                vm.clearTags()
+                            }
+                        }
+                        
+                        ForEach(vm.allTags, id: \.self) { tag in
+                            TagButton(name: tag.wrappedName, isSelected: vm.selectedTags.contains(tag)) {
+                                withAnimation(tagAnimation) {
+                                    vm.toggleTag(tag)
+                                }
                             }
                         }
                     }
+                    .padding(.leading)
                 }
-                .padding(.leading)
             }
         }
         .searchable(text: $vm.query)
