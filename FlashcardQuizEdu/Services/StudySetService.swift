@@ -26,23 +26,70 @@ class StudySetService: DataService {
         return (try? manager.context.fetch(request)) ?? []
     }
     
-    func add(_ entity: StudySetEntity) {
+    func fetchFiltered(
+        tags: [TagEntity] = [],
+        category: CategoryEntity? = nil,
+        containing query: String = "",
+        sortedBy: SortOption? = nil,
+        direction: SortDirection = .ascending
+    ) -> [StudySetEntity] {
+        let request = StudySetEntity.fetchRequest()
+        var predicates: [NSPredicate] = []
         
+        if !tags.isEmpty {
+            predicates.append(NSPredicate(format: "ANY tags IN %@", tags))
+        }
+        
+        if let category {
+            predicates.append(NSPredicate(format: "category == %@", category))
+        }
+        
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedQuery.isEmpty {
+            predicates.append(NSPredicate(format: "name CONTAINS[cd] %@", trimmedQuery))
+        }
+        
+        if !predicates.isEmpty {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        }
+        
+        if let sortedBy {
+            request.sortDescriptors = [sortedBy.descriptor(for: direction)]
+        }
+        
+        return (try? manager.context.fetch(request)) ?? []
+    }
+    
+    func add(name: String, category: CategoryEntity, tags: [TagEntity]) {
+        let studySet = StudySetEntity(context: manager.context)
+        studySet.name = name
+        studySet.category = category
+        studySet.addToTags(NSSet(array: tags))
+        manager.save()
+    }
+    
+    func edit(_ studySet: StudySetEntity, name: String? = nil, category: CategoryEntity? = nil, tags: [TagEntity]? = nil) {
+        if let name { studySet.name = name }
+        if let category { studySet.category = category }
+        if let tags { studySet.tags = NSSet(array: tags) }
+        manager.save()
     }
     
     func delete(_ entity: StudySetEntity) {
-        
+        manager.context.delete(entity)
+        manager.save()
     }
     
     enum SortOption: String, CaseIterable, Identifiable {
         case name = "Nazwa"
         case createdAt = "Data utworzenia"
-        case flashcardCount = "Ilość elementów"
+        case flashcardCount = "Liczba fiszek"
+        case tagCount = "Liczba tagów"
         
         func directionLabel(for direction: SortDirection) -> String {
             let ascending = direction == .ascending
             return switch self {
-            case .name, .flashcardCount:
+            case .name, .flashcardCount, .tagCount:
                 ascending ? "Rosnąco" : "Malejąco"
             case .createdAt:
                 ascending ? "Od najstarszych" : "Od najnowszych"
@@ -58,6 +105,8 @@ class StudySetService: DataService {
                 NSSortDescriptor(key: "createdAt", ascending: ascending)
             case .flashcardCount:
                 NSSortDescriptor(key: "flashcardCount", ascending: ascending)
+            case .tagCount:
+                NSSortDescriptor(key: "tagCount", ascending: ascending)
             }
         }
         
