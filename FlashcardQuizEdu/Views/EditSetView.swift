@@ -11,6 +11,8 @@ struct EditSetView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var vm: EditSetViewModel
     
+    // TODO: Alert o zmianach niezapisanych lub o odrzuceniu nowego zestawu jak w przypomnieniach applowych
+    
     init(viewModel: EditSetViewModel = EditSetViewModel()) {
         self.vm = viewModel
     }
@@ -18,7 +20,7 @@ struct EditSetView: View {
     var body: some View {
         Form {
             Section {
-                TextField("Nazwa", text: $vm.name)
+                TextField("Nazwa", text: $vm.studySetName)
             }
             
             Section {
@@ -35,26 +37,52 @@ struct EditSetView: View {
             }
             
             Section {
-                ScrollView(.horizontal) {
-                    HStack {
-                        ForEach(vm.tags) { tag in
-                            if let name = tag.name {
-                                Button(name) {
-                                    
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                        }
+                HStack {
+                    TextField("Nowy tag", text: $vm.newTagName)
+                    Button {
+                        
+                    } label: {
+                        Image(systemName: "plus")
+                            .symbolVariant(.circle.fill)
+                            .tint(.green)
+                    }
+                    .disabled(vm.newTagName.isEmpty)
+                }
+                
+                ForEach(vm.selectedTags) { tag in
+                    Button {
+                        vm.toggleTag(tag)
+                    } label: {
+                        Text("wybrany " + tag.wrappedName)
+                    }
+                }
+                
+                ForEach(vm.initialTags) { tag in
+                    Button {
+                        vm.toggleTag(tag)
+                    } label: {
+                        Text("istniejący " + tag.wrappedName)
+                    }
+                }
+                
+                ForEach(vm.remainingTags) { tag in
+                    Button {
+                        vm.toggleTag(tag)
+                    } label: {
+                        Text(tag.wrappedName)
                     }
                 }
             }
+            .buttonStyle(.plain)
         }
-        .navigationTitle("Nowy zestaw")
+        .navigationTitle(vm.isEditing ? "Edytuj zestaw" : "Nowy zestaw")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(role: .confirm) {
-                    
+                    vm.save()
+                    dismiss()
                 }
+                .disabled(vm.isSaveDisabled)
             }
             
             ToolbarItem(placement: .cancellationAction) {
@@ -63,15 +91,32 @@ struct EditSetView: View {
                 }
             }
         }
+        .interactiveDismissDisabled(vm.isSaveDisabled)
+//        .alert("Unsaved changes", isPresented: $showingAlert) {
+//            Button("Odrzuć zmiany", role: .destructive) {
+//                dismiss()
+//            }
+//        } message: {
+//            Text("Czy chcesz odrzucić zmiany?")
+//        }
     }
 }
 
 #Preview {
-//    let manager = CoreDataManager.preview
-//    let categoryService = CategoryService(manager: manager)
-//    let tagService = TagService(manager: manager)
+    @Previewable @State var isPresented = true
+    
+    let manager = CoreDataManager.preview
+    let categoryService = CategoryService(manager: manager)
+    let tagService = TagService(manager: manager)
+    let studySetService = StudySetService(manager: manager)
+    let studySet = studySetService.fetchAll(sortedBy: .tagCount, direction: .descending).first!
+    let vm = EditSetViewModel(categoryService: categoryService, tagService: tagService, studySetService: studySetService, selectedStudySet: studySet)
     
     NavigationStack {
-        EditSetView(viewModel: EditSetViewModel())
+        Circle().sheet(isPresented: $isPresented) {
+            NavigationStack {
+                EditSetView(viewModel: vm)
+            }
+        }
     }
 }

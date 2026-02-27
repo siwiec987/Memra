@@ -11,17 +11,55 @@ import Foundation
 class EditSetViewModel {
     @ObservationIgnored let categoryService: CategoryService
     @ObservationIgnored let tagService: TagService
+    @ObservationIgnored let studySetService: StudySetService
+    
+    private(set) var categories: [CategoryEntity] = []
+    private(set) var tags: [TagEntity] = []
+    
+    var studySetName = ""
+    var newTagName = ""
+    var selectedCategory: CategoryEntity?
+    var selectedStudySet: StudySetEntity?
+    
+    let isEditing: Bool
+    var isSaveDisabled: Bool {
+        studySetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        selectedCategory == nil
+        
+    }
+    
+    var initialTags: [TagEntity] = []
+    var selectedTags: [TagEntity] = []
+    
+    var remainingTags: [TagEntity] {
+        tags.filter { !selectedTags.contains($0) && !initialTags.contains($0) }
+    }
+    
+    var sortedTags: [TagEntity] {
+        selectedTags + initialTags + remainingTags
+    }
     
     init(
         categoryService: CategoryService = CategoryService(manager: CoreDataManager.instance),
         tagService: TagService = TagService(manager: CoreDataManager.instance),
-        selectedCategory: CategoryEntity? = nil
+        studySetService: StudySetService = StudySetService(manager: CoreDataManager.instance),
+        selectedCategory: CategoryEntity? = nil,
+        selectedStudySet: StudySetEntity? = nil
     ) {
         self.categoryService = categoryService
         self.tagService = tagService
+        self.studySetService = studySetService
         
-        self.categories = categoryService.fetchAll(sortedBy: .studySetCount, direction: .descending)
-        self.tags = tagService.fetchAll(sortedBy: .studySetCount, direction: .descending)
+        if let selectedStudySet {
+            self.selectedStudySet = selectedStudySet
+            self.studySetName = selectedStudySet.wrappedName
+            self.initialTags = Array(selectedStudySet.tagsSet)
+            self.isEditing = true
+        } else {
+            self.isEditing = false
+        }    
+        
+        reload()
         
         if let selectedCategory {
             self.selectedCategory = selectedCategory
@@ -30,9 +68,28 @@ class EditSetViewModel {
         }
     }
     
-    var name = ""
-    var selectedCategory: CategoryEntity?
+    func toggleTag(_ tag: TagEntity) {
+        if selectedTags.contains(tag) {
+            selectedTags.removeAll { $0 == tag }
+        } else if initialTags.contains(tag) {
+            initialTags.removeAll { $0 == tag }
+        } else {
+            selectedTags.insert(tag, at: 0)
+        }
+    }
     
-    var categories: [CategoryEntity]
-    var tags: [TagEntity]
+    private func reload() {
+        categories = categoryService.fetchAll(sortedBy: .studySetCount, direction: .descending)
+        tags = tagService.fetchAll(sortedBy: .studySetCount, direction: .descending)
+    }
+    
+    func save() {
+        if isEditing {
+            guard let selectedStudySet else { return }
+            studySetService.edit(selectedStudySet)
+        } else {
+            guard let selectedCategory else { return }
+            studySetService.add(name: studySetName, category: selectedCategory, tags: selectedTags)
+        }
+    }
 }
