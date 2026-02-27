@@ -12,6 +12,5 @@ protocol DataService {
     associatedtype SortOption: RawRepresentable, CaseIterable, Identifiable where SortOption.RawValue == String
     init(manager: CoreDataManager)
     func fetchAll(sortedBy: SortOption?, direction: SortDirection) -> [Entity]
-    func add(_ entity: Entity)
     func delete(_ entity: Entity)
 }
