@@ -24,9 +24,7 @@ struct EditSetView: View {
             Section {
                 Picker("Kategoria", selection: $vm.selectedCategory) {
                     ForEach(vm.categories) { category in
-                        if let name = category.name, let icon = category.systemIcon {
-                            Label(name, systemImage: icon).tag(category)
-                        }
+                        Label(category.wrappedName, systemImage: category.wrappedSystemIcon).tag(category)
                     }
                 }
                 

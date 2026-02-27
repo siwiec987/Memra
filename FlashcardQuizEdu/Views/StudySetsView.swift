@@ -54,7 +54,7 @@ struct StudySetsView: View {
                         .listRowBackground(Color.clear)
                 } else {
                     ForEach(vm.studySets) { set in
-                        Text(set.name ?? "")
+                        Text(set.wrappedName)
                     }
                 }
             }

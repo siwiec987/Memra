@@ -19,11 +19,11 @@ struct StudyView: View {
             //kategorie -> sety -> itd
             NavigationLink(value: category) {
                 HStack {
-                    Image(systemName: category.systemIcon ?? "")
+                    Image(systemName: category.wrappedSystemIcon)
 //                        .foregroundStyle(category.color)
                         .frame(width: 50)
                     
-                    Text(category.name ?? "")
+                    Text(category.wrappedName)
                 }
             }
         }
