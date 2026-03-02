@@ -8,9 +8,21 @@
 import SwiftUI
 
 struct EditCategoryView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var vm = EditCategoryViewModel()
     
+    let onSave: ((CategoryEntity) -> Void)?
+    
     let columns = Array(repeating: GridItem(.flexible()), count: 6)
+    
+    init(viewModel: EditCategoryViewModel = EditCategoryViewModel(), onSave: ((CategoryEntity) -> Void)? = nil) {
+        self.vm = viewModel
+        self.onSave = onSave
+    }
+    
+    private var title: String {
+        vm.isEditing ? "Edytuj kategorię" : "Nowa kategoria"
+    }
     
     var body: some View {
         Form {
@@ -29,7 +41,7 @@ struct EditCategoryView: View {
                     
                     Divider()
 
-                    TextField("Tytuł", text: $vm.title)
+                    TextField("Nazwa", text: $vm.categoryName)
                         .font(.title)
                         .bold()
                         .foregroundStyle(vm.selectedColor.value)
@@ -85,17 +97,23 @@ struct EditCategoryView: View {
                 }
             }
         }
-        .navigationTitle("Nowa kategoria")
+        .navigationTitle(title)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(role: .confirm) {
-                    
+                    if let category = vm.save() {
+                        onSave?(category)                        
+                    }
+                    dismiss()
                 }
+                .disabled(vm.isSaveDisabled)
             }
         }
     }
 }
 
 #Preview {
-    EditCategoryView()
+    NavigationStack {
+        EditCategoryView()
+    }
 }

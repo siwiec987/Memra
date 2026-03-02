@@ -9,12 +9,51 @@ import Foundation
 
 @Observable
 class EditCategoryViewModel {
-    var title = ""
+    @ObservationIgnored private let categoryService: CategoryService
+    
+    var categoryName = ""
     var selectedColor: CategoryEntity.AccentColor = .default
     var selectedIconName = "graduationcap"
     
+    let selectedCategory: CategoryEntity?
+    
+    init(
+        categoryService: CategoryService = CategoryService(manager: CoreDataManager.instance),
+        category: CategoryEntity? = nil
+    ) {
+        self.categoryService = categoryService
+        
+        if let category {
+            self.categoryName = category.wrappedName
+            self.selectedColor = category.accentColor
+            self.selectedIconName = category.wrappedSystemIcon
+            self.selectedCategory = category
+        } else {
+            self.selectedCategory = nil
+        }
+    }
+    
+    var isEditing: Bool {
+        selectedCategory != nil
+    }
+    
+    var isSaveDisabled: Bool {
+        categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        selectedIconName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    
     var availableColors: [CategoryEntity.AccentColor] {
         CategoryEntity.AccentColor.allCases
+    }
+    
+    func save() -> CategoryEntity? {
+        if let selectedCategory {
+            categoryService.edit(selectedCategory, name: categoryName, accentColor: selectedColor, systemIcon: selectedIconName)
+        } else {
+            return categoryService.add(name: categoryName, accentColor: selectedColor, systemIcon: selectedIconName)
+        }
+        
+        return nil
     }
     
     let icons: [String] = [
