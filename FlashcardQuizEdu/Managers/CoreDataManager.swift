@@ -74,6 +74,8 @@ class CoreDataManager {
     }
     
     func save() {
+        guard context.hasChanges else { return }
+        
         do {
             try context.save()
         } catch {
