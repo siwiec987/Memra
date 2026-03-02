@@ -5,6 +5,7 @@
 //  Created by Jakub Siwiec on 16/02/2026.
 //
 
+import CoreData
 import Foundation
 
 class StudySetService: DataService {
@@ -16,23 +17,12 @@ class StudySetService: DataService {
         self.manager = manager
     }
     
-    func fetchAll(sortedBy: SortOption? = nil, direction: SortDirection = .ascending) -> [StudySetEntity] {
-        let request = StudySetEntity.fetchRequest()
-        
-        if let sortedBy {
-            request.sortDescriptors = [sortedBy.descriptor(for: direction)]
-        }
-        
-        return (try? manager.context.fetch(request)) ?? []
-    }
-    
-    func fetchFiltered(
+    func makeFetchRequest(
         tags: [TagEntity] = [],
         category: CategoryEntity? = nil,
-        containing query: String = "",
         sortedBy: SortOption? = nil,
         direction: SortDirection = .ascending
-    ) -> [StudySetEntity] {
+    ) -> NSFetchRequest<StudySetEntity> {
         let request = StudySetEntity.fetchRequest()
         var predicates: [NSPredicate] = []
         
@@ -44,11 +34,6 @@ class StudySetService: DataService {
             predicates.append(NSPredicate(format: "category == %@", category))
         }
         
-        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedQuery.isEmpty {
-            predicates.append(NSPredicate(format: "name CONTAINS[cd] %@", trimmedQuery))
-        }
-        
         if !predicates.isEmpty {
             request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
         }
@@ -57,6 +42,21 @@ class StudySetService: DataService {
             request.sortDescriptors = [sortedBy.descriptor(for: direction)]
         }
         
+        return request
+    }
+    
+    func fetchAll(sortedBy sortOption: SortOption? = nil, direction: SortDirection = .ascending) -> [StudySetEntity] {
+        let request = makeFetchRequest(sortedBy: sortOption, direction: direction)
+        return (try? manager.context.fetch(request)) ?? []
+    }
+    
+    func fetchFiltered(
+        tags: [TagEntity] = [],
+        category: CategoryEntity? = nil,
+        sortedBy: SortOption? = nil,
+        direction: SortDirection = .ascending
+    ) -> [StudySetEntity] {
+        let request = makeFetchRequest(tags: tags, category: category, sortedBy: sortedBy, direction: direction)
         return (try? manager.context.fetch(request)) ?? []
     }
     
