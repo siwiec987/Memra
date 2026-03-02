@@ -10,6 +10,8 @@ import SwiftUI
 struct EditSetButtonSheetView: View {
     @State private var showingSheet = false
     
+    let category: CategoryEntity?
+    
     var body: some View {
         Button(role: .confirm) {
             showingSheet = true
@@ -18,13 +20,9 @@ struct EditSetButtonSheetView: View {
         }
         .sheet(isPresented: $showingSheet) {
             NavigationStack {
-                EditSetView()
+                EditSetView(viewModel: EditSetViewModel(selectedCategory: category))
                     .tint(.none)
             }
         }
     }
-}
-
-#Preview {
-    EditSetButtonSheetView()
 }
