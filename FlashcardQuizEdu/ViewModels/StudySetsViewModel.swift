@@ -5,12 +5,14 @@
 //  Created by Jakub Siwiec on 16/02/2026.
 //
 
+import CoreData
 import Foundation
 
 @Observable
-class StudySetsViewModel {
+class StudySetsViewModel: NSObject {
     @ObservationIgnored let studySetService: StudySetService
     @ObservationIgnored let category: CategoryEntity
+    @ObservationIgnored private var frc: NSFetchedResultsController<StudySetEntity>
     
     var studySets: [StudySetEntity] = []
     var tags: [TagEntity] = []
@@ -36,40 +38,31 @@ class StudySetsViewModel {
     
     init(
         category: CategoryEntity,
-        studySetService: StudySetService = StudySetService(manager: CoreDataManager.instance)
+        studySetService: StudySetService = StudySetService(manager: CoreDataManager.instance),
+        context: NSManagedObjectContext = CoreDataManager.instance.context
     ) {
         self.category = category
         self.studySetService = studySetService
         
-        if let savedOption = UserDefaults.standard.string(forKey: "StudySetsSortOption"), let option = StudySetService.SortOption(rawValue: savedOption) {
-            self.sortOption = option
-        }
-        
+        let savedOption = UserDefaults.standard.string(forKey: "StudySetsSortOption")
+        let initialSortOption = StudySetService.SortOption(rawValue: savedOption ?? "") ?? .name
+        self.sortOption = initialSortOption
+
         let savedDirection = UserDefaults.standard.integer(forKey: "StudySetsSortDirection")
-        if let direction = SortDirection(rawValue: savedDirection) {
-            self.sortDirection = direction
-        }
+        let initialSortDirection = SortDirection(rawValue: savedDirection) ?? .descending
+        self.sortDirection = initialSortDirection
+
+        let request = studySetService.makeFetchRequest(category: category, sortedBy: initialSortOption, direction: initialSortDirection)
+        self.frc = NSFetchedResultsController(fetchRequest: request, managedObjectContext: context, sectionNameKeyPath: nil, cacheName: nil)
         
+        super.init()
+        
+        frc.delegate = self
         reload()
-        let tagSet = studySets.reduce(into: Set<TagEntity>()) { result, set in
-            result.formUnion(set.tagsSet)
-        }
-        self.tags = tagSet.sorted {
-            ($0.studySetCount != $1.studySetCount) ? ($0.studySetCount > $1.studySetCount) : ($0.wrappedName > $1.wrappedName)
-        }
     }
     
     var allTags: [TagEntity] {
         selectedTags + tags.filter { !selectedTags.contains($0) }
-    }
-    
-    private func reload() {
-        studySets = studySetService.fetchFiltered(
-            tags: selectedTags,
-            category: category,
-            sortedBy: sortOption,
-            direction: sortDirection
-        )
     }
     
     func toggleTag(_ tag: TagEntity) {
@@ -89,5 +82,38 @@ class StudySetsViewModel {
     
     func directionLabel(for direction: SortDirection) -> String {
         sortOption.directionLabel(for: direction)
+    }
+    
+    private func reload() {
+        let request = studySetService.makeFetchRequest(tags: selectedTags, category: category, sortedBy: sortOption, direction: sortDirection)
+        frc.fetchRequest.predicate = request.predicate
+        frc.fetchRequest.sortDescriptors = request.sortDescriptors
+        try? frc.performFetch()
+        syncFromFRC()
+    }
+    
+    private func syncFromFRC() {
+        studySets = frc.fetchedObjects ?? []
+        updateTags()
+    }
+    
+    private func updateTags() {
+        let tagSet = studySets.reduce(into: Set<TagEntity>()) { result, set in
+            result.formUnion(set.tagsSet)
+        }
+        tags = tagSet.sorted {
+            ($0.studySetCount != $1.studySetCount) ?
+            ($0.studySetCount > $1.studySetCount) :
+            ($0.wrappedName > $1.wrappedName)
+        }
+        selectedTags.removeAll { !tags.contains($0) }
+    }
+}
+
+extension StudySetsViewModel: NSFetchedResultsControllerDelegate {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<any NSFetchRequestResult>) {
+        guard let objects = controller.fetchedObjects as? [StudySetEntity] else { return }
+        studySets = objects
+        updateTags()
     }
 }
