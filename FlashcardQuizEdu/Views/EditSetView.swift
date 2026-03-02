@@ -11,7 +11,11 @@ struct EditSetView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var vm: EditSetViewModel
     
+    @State private var showingConfirmationDialog = false
+    
     // TODO: Alert o zmianach niezapisanych lub o odrzuceniu nowego zestawu jak w przypomnieniach applowych
+    // TODO: Ogarnij wyświetlanie tych tagów, bo to jest jakieś nieporozumienie co się tu dzieje
+    // TODO: Po dodaniu nowej kategorii vm.selectedCategory powinno zostać zaktualizowane
     
     init(viewModel: EditSetViewModel = EditSetViewModel()) {
         self.vm = viewModel
@@ -31,7 +35,9 @@ struct EditSetView: View {
                 }
                 
                 NavigationLink("Nowa kategoria") {
-                    EditCategoryView()
+                    EditCategoryView { newCategory in
+                        vm.selectedCategory = newCategory
+                    }
                         .tint(.none)
                 }
             }
@@ -87,18 +93,17 @@ struct EditSetView: View {
             
             ToolbarItem(placement: .cancellationAction) {
                 Button(role: .close) {
-                    dismiss()
+                    showingConfirmationDialog = true
+//                    dismiss()
+                }
+                .confirmationDialog("Odrzucić zmiany?", isPresented: $showingConfirmationDialog, titleVisibility: .visible) {
+                    Button("Odrzuć", role: .destructive) {
+                        dismiss()
+                    }
                 }
             }
         }
         .interactiveDismissDisabled(vm.isSaveDisabled)
-//        .alert("Unsaved changes", isPresented: $showingAlert) {
-//            Button("Odrzuć zmiany", role: .destructive) {
-//                dismiss()
-//            }
-//        } message: {
-//            Text("Czy chcesz odrzucić zmiany?")
-//        }
     }
 }
 
