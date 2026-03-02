@@ -19,12 +19,7 @@ struct StudySetsView: View {
     var body: some View {
         List {
             Section {
-                if vm.studySets.isEmpty && !vm.query.isEmpty {
-                    ContentUnavailableView("Brak wyników", systemImage: "magnifyingglass", description: Text("Sprawdź pisownię lub zmień filtry"))
-                        .listRowInsets(.init())
-                        .listRowBackground(Color.clear)
-                        .frame(maxHeight: .infinity)
-                } else if vm.studySets.isEmpty {
+                if vm.studySets.isEmpty {
                     ContentUnavailableView("Brak wyników", systemImage: "rectangle.stack.slash", description: Text("Dodaj se nowy secik mordzia"))
                         .listRowInsets(.init())
                         .listRowBackground(Color.clear)
@@ -43,7 +38,7 @@ struct StudySetsView: View {
             }
             ToolbarSpacer(.fixed)
             ToolbarItem {
-                EditSetButtonSheetView()
+                EditSetButtonSheetView(category: vm.category)
             }
         }
         .safeAreaBar(edge: .top) {
@@ -68,7 +63,6 @@ struct StudySetsView: View {
                 }
             }
         }
-        .searchable(text: $vm.query)
     }
 }
 

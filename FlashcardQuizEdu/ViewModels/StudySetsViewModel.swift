@@ -30,12 +30,6 @@ class StudySetsViewModel {
         }
     }
     
-    var query = "" {
-        didSet {
-            reload()
-        }
-    }
-    
     var title: String {
         category.wrappedName
     }
@@ -73,7 +67,6 @@ class StudySetsViewModel {
         studySets = studySetService.fetchFiltered(
             tags: selectedTags,
             category: category,
-            containing: query,
             sortedBy: sortOption,
             direction: sortDirection
         )
