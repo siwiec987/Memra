@@ -22,6 +22,7 @@ class EditSetViewModel {
     var studySetName = ""
     var selectedCategory: CategoryEntity?
     var selectedTagIDs: Set<NSManagedObjectID> = []
+    var createdTags: Set<TagEntity> = []
     var selectedStudySet: StudySetEntity
     
     let isEditing: Bool
@@ -45,17 +46,22 @@ class EditSetViewModel {
         fetchCategories()
         fetchTags()
         
-        guard self.selectedStudySet.category == nil else { return }
-        if let categoryID, let category = try? editContext.existingObject(with: categoryID) as? CategoryEntity {
-            self.selectedStudySet.category = category
-        } else {
-            self.selectedStudySet.category = categories.first
+        if self.selectedStudySet.category == nil {
+            if let categoryID, let category = try? editContext.existingObject(with: categoryID) as? CategoryEntity {
+                self.selectedStudySet.category = category
+            } else {
+                self.selectedStudySet.category = categories.first
+            }
         }
         
         self.studySetName = selectedStudySet.wrappedName
         self.selectedCategory = selectedStudySet.category
         self.selectedTagIDs = Set(selectedStudySet.tagsSet.map { $0.objectID })
         takeSnapshot()
+    }
+    
+    var tagsSorted: [TagEntity] {
+        tags.sorted { $0.wrappedName < $1.wrappedName }
     }
     
     var newTagNameTrimmed: String {
@@ -69,7 +75,6 @@ class EditSetViewModel {
     
     var hasUnsavedChanges: Bool {
         guard let snapshot = initialSnapshot else { return false }
-//        let currentTagIDs = Set(selectedStudySet.tagsSet.map { $0.objectID })
         
         return studySetName.trimmed() != snapshot.name ||
                 selectedCategory?.objectID != snapshot.categoryID ||
@@ -110,6 +115,13 @@ class EditSetViewModel {
         selectedStudySet.name = studySetName.trimmed()
         selectedStudySet.category = selectedCategory
         selectedStudySet.tags = NSSet(array: tags.filter { selectedTagIDs.contains($0.objectID) })
+        
+        createdTags.forEach { tag in
+            if !selectedTagIDs.contains(tag.objectID) {
+                editContext.delete(tag)
+            }
+        }
+        
         guard selectedStudySet.category != nil else { return print("Kategoria pusta") }
         guard !selectedStudySet.wrappedName.isEmpty else { return print("nazwa pusta")}
         guard ((try? editContext.save()) != nil) else { return }
@@ -129,13 +141,14 @@ class EditSetViewModel {
     
     func addTag() {
         guard !newTagNameTrimmed.isEmpty else { return }
+        guard !tags.contains(where: { $0.wrappedName.caseInsensitiveCompare(newTagNameTrimmed) == .orderedSame }) else { return }
         
         let newTag = TagEntity(context: editContext)
         newTag.name = newTagNameTrimmed
-        newTag.addToStudySets(selectedStudySet)
+        tags.append(newTag)
+        createdTags.insert(newTag)
         selectedTagIDs.insert(newTag.objectID)
         newTagName = ""
-        fetchTags()
     }
     
     private struct StudySetSnapshot {
