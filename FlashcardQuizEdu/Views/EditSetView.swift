@@ -12,6 +12,8 @@ struct EditSetView: View {
     @State private var vm: EditSetViewModel
     @State private var showingConfirmationDialog = false
     
+    private let tagAnimation = Animation.spring(response: 0.3, dampingFraction: 0.7)
+    
     init(viewModel: EditSetViewModel = EditSetViewModel()) {
         self.vm = viewModel
     }
@@ -43,9 +45,14 @@ struct EditSetView: View {
             Section {
                 HStack {
                     TextField("Nowy tag", text: $vm.newTagName)
-                        .onSubmit(vm.addTag)
+                        .onSubmit {
+                            withAnimation(tagAnimation, vm.addTag)
+                        }
+                    
                     Button {
-                        vm.addTag()
+                        withAnimation(tagAnimation) {
+                            vm.addTag()
+                        }
                     } label: {
                         Image(systemName: "plus")
                             .symbolVariant(.circle.fill)
@@ -56,9 +63,11 @@ struct EditSetView: View {
                 
                 if !vm.tags.isEmpty {
                     FlowLayout {
-                        ForEach(vm.tags) { tag in
+                        ForEach(vm.tagsSorted) { tag in
                             TagButton(name: tag.wrappedName, isSelected: vm.selectedTagIDs.contains(tag.objectID)) {
-                                vm.toggleTag(tag)
+                                withAnimation {
+                                    vm.toggleTag(tag)
+                                }
                             }
                         }
                     }
@@ -92,6 +101,10 @@ struct EditSetView: View {
             }
         }
         .interactiveDismissDisabled(vm.hasUnsavedChanges)
+    }
+    
+    func addTag() {
+        
     }
 }
 
