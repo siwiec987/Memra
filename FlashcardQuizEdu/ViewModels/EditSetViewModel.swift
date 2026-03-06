@@ -8,121 +8,139 @@
 import CoreData
 import Foundation
 
-// TODO: Ogarnij te tagi, bo to jest jakieś nieporozumienie co się tu dzieje
-
 @Observable
-class EditSetViewModel: NSObject {
-    @ObservationIgnored let categoryService: CategoryService
-    @ObservationIgnored let tagService: TagService
-    @ObservationIgnored let studySetService: StudySetService
-    
-    @ObservationIgnored private var frc: NSFetchedResultsController<CategoryEntity>
+class EditSetViewModel {
+    @ObservationIgnored let editContext: NSManagedObjectContext
+    @ObservationIgnored private let persistence: PersistenceController
+    @ObservationIgnored private var initialSnapshot: StudySetSnapshot?
     
     private(set) var categories: [CategoryEntity] = []
     private(set) var tags: [TagEntity] = []
     
-    var studySetName = ""
     var newTagName = ""
+    
+    var studySetName = ""
     var selectedCategory: CategoryEntity?
-    let selectedStudySet: StudySetEntity?
+    var selectedTagIDs: Set<NSManagedObjectID> = []
+    var selectedStudySet: StudySetEntity
+    
+    let isEditing: Bool
+    
+    init(
+        persistence: PersistenceController = PersistenceController.instance,
+        studySetID: NSManagedObjectID? = nil,
+        categoryID: NSManagedObjectID? = nil
+    ) {
+        self.persistence = persistence
+        self.editContext = persistence.newChildContext()
+        
+        if let studySetID, let studySet = try? editContext.existingObject(with: studySetID) as? StudySetEntity {
+            self.selectedStudySet = studySet
+            self.isEditing = true
+        } else {
+            self.selectedStudySet = StudySetEntity(context: editContext)
+            self.isEditing = false
+        }
+        
+        fetchCategories()
+        fetchTags()
+        
+        guard self.selectedStudySet.category == nil else { return }
+        if let categoryID, let category = try? editContext.existingObject(with: categoryID) as? CategoryEntity {
+            self.selectedStudySet.category = category
+        } else {
+            self.selectedStudySet.category = categories.first
+        }
+        
+        self.studySetName = selectedStudySet.wrappedName
+        self.selectedCategory = selectedStudySet.category
+        self.selectedTagIDs = Set(selectedStudySet.tagsSet.map { $0.objectID })
+        takeSnapshot()
+    }
+    
+    var newTagNameTrimmed: String {
+        newTagName.trimmed()
+    }
     
     var isSaveDisabled: Bool {
-        studySetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        studySetName.trimmed().isEmpty ||
         selectedCategory == nil
     }
     
-    var initialTags: [TagEntity] = []
-    var selectedTags: [TagEntity] = []
-    
-    var isEditing: Bool {
-        selectedStudySet != nil
+    var hasUnsavedChanges: Bool {
+        guard let snapshot = initialSnapshot else { return false }
+//        let currentTagIDs = Set(selectedStudySet.tagsSet.map { $0.objectID })
+        
+        return studySetName.trimmed() != snapshot.name ||
+                selectedCategory?.objectID != snapshot.categoryID ||
+                selectedTagIDs != snapshot.tagIDs ||
+                !newTagNameTrimmed.isEmpty
     }
     
-    var remainingTags: [TagEntity] {
-        tags.filter { !selectedTags.contains($0) && !initialTags.contains($0) }
+    private func takeSnapshot() {
+        initialSnapshot = StudySetSnapshot(
+            name: studySetName.trimmed(),
+            categoryID: selectedCategory?.objectID,
+            tagIDs: selectedTagIDs
+        )
     }
     
-    var sortedTags: [TagEntity] {
-        selectedTags + initialTags + remainingTags
-    }
-
-    private var finalTags: [TagEntity] {
-        var seen: Set<NSManagedObjectID> = []
-        return (selectedTags + initialTags).filter { tag in
-            seen.insert(tag.objectID).inserted
-        }
+    private func fetchCategories() {
+        let request = CategoryEntity.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "studySetCount", ascending: false)]
+        categories = (try? editContext.fetch(request)) ?? []
     }
     
-    init(
-        categoryService: CategoryService = CategoryService(manager: CoreDataManager.instance),
-        tagService: TagService = TagService(manager: CoreDataManager.instance),
-        studySetService: StudySetService = StudySetService(manager: CoreDataManager.instance),
-        context: NSManagedObjectContext = CoreDataManager.instance.context,
-        selectedCategory: CategoryEntity? = nil,
-        selectedStudySet: StudySetEntity? = nil
-    ) {
-        self.categoryService = categoryService
-        self.tagService = tagService
-        self.studySetService = studySetService
-        
-        if let selectedStudySet {
-            self.studySetName = selectedStudySet.wrappedName
-            self.initialTags = Array(selectedStudySet.tagsSet)
-            self.selectedCategory = selectedStudySet.category
-            self.selectedStudySet = selectedStudySet
-        } else {
-            self.selectedStudySet = nil
-        }
-        
-        let request = categoryService.makeFetchRequest(sortedBy: .studySetCount, direction: .descending)
-        self.frc = NSFetchedResultsController(fetchRequest: request, managedObjectContext: context, sectionNameKeyPath: nil, cacheName: nil)
-        
-        super.init()
-        
-        frc.delegate = self
-        try? frc.performFetch()
-        categories = frc.fetchedObjects ?? []
-        
-        tags = tagService.fetchAll(sortedBy: .studySetCount, direction: .descending)
-        
-        if let selectedCategory {
-            self.selectedCategory = selectedCategory
-        } else {
-            self.selectedCategory = categories.first
-        }
+    private func fetchTags() {
+        let request = TagEntity.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+        self.tags = (try? editContext.fetch(request)) ?? []
     }
     
     func toggleTag(_ tag: TagEntity) {
-        if selectedTags.contains(tag) {
-            selectedTags.removeAll { $0 == tag }
-        } else if initialTags.contains(tag) {
-            initialTags.removeAll { $0 == tag }
+        let tagID = tag.objectID
+        if selectedTagIDs.contains(tagID) {
+            selectedTagIDs.remove(tagID)
         } else {
-            selectedTags.insert(tag, at: 0)
+            selectedTagIDs.insert(tagID)
         }
     }
     
     func save() {
-        guard let selectedCategory else { return }
-        let trimmedName = studySetName.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        if let selectedStudySet {
-            studySetService.edit(selectedStudySet, name: trimmedName, category: selectedCategory, tags: finalTags)
-        } else {
-            studySetService.add(name: trimmedName, category: selectedCategory, tags: finalTags)
-        }
+        selectedStudySet.name = studySetName.trimmed()
+        selectedStudySet.category = selectedCategory
+        selectedStudySet.tags = NSSet(array: tags.filter { selectedTagIDs.contains($0.objectID) })
+        guard selectedStudySet.category != nil else { return print("Kategoria pusta") }
+        guard !selectedStudySet.wrappedName.isEmpty else { return print("nazwa pusta")}
+        guard ((try? editContext.save()) != nil) else { return }
+        persistence.save()
+        print("Dochodzimy tu w ogole?")
     }
-}
-
-extension EditSetViewModel: NSFetchedResultsControllerDelegate {
-    func controllerDidChangeContent(_ controller: NSFetchedResultsController<any NSFetchRequestResult>) {
-        guard let objects = controller.fetchedObjects as? [CategoryEntity] else { return }
-        categories = objects
+    
+    func newCategory(_ category: CategoryEntity) {
+        let newCategory = CategoryEntity(context: editContext)
+        newCategory.name = category.wrappedName
+        newCategory.accentColor = category.accentColor
+        newCategory.systemIcon = category.wrappedSystemIcon
         
-        if let selectedCategory, categories.contains(selectedCategory) {
-            return
-        }
+        selectedCategory = newCategory
+        categories.insert(newCategory, at: 0)
+    }
+    
+    func addTag() {
+        guard !newTagNameTrimmed.isEmpty else { return }
         
-        selectedCategory = categories.first
+        let newTag = TagEntity(context: editContext)
+        newTag.name = newTagNameTrimmed
+        newTag.addToStudySets(selectedStudySet)
+        selectedTagIDs.insert(newTag.objectID)
+        newTagName = ""
+        fetchTags()
+    }
+    
+    private struct StudySetSnapshot {
+        let name: String
+        let categoryID: NSManagedObjectID?
+        let tagIDs: Set<NSManagedObjectID>
     }
 }

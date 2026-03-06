@@ -10,7 +10,7 @@ import Foundation
 protocol DataService {
     associatedtype Entity
     associatedtype SortOption: RawRepresentable, CaseIterable, Identifiable where SortOption.RawValue == String
-    init(manager: CoreDataManager)
+    init(manager: PersistenceController)
     func fetchAll(sortedBy: SortOption?, direction: SortDirection) -> [Entity]
     func delete(_ entity: Entity)
 }

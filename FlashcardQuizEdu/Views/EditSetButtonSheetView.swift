@@ -13,14 +13,13 @@ struct EditSetButtonSheetView: View {
     let category: CategoryEntity?
     
     var body: some View {
-        Button(role: .confirm) {
+        Button("Nowy zestaw", systemImage: "plus", role: .confirm) {
             showingSheet = true
-        } label: {
-            Image(systemName: "plus")
         }
+        .tint(category?.accentColor.value)
         .sheet(isPresented: $showingSheet) {
             NavigationStack {
-                EditSetView(viewModel: EditSetViewModel(selectedCategory: category))
+                EditSetView(viewModel: EditSetViewModel(categoryID: category?.objectID))
                     .tint(.none)
             }
         }

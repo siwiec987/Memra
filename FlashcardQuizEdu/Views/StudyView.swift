@@ -15,32 +15,35 @@ struct StudyView: View {
     }
     
     var body: some View {
-        List(vm.categories) { category in
-            //kategorie -> sety -> itd
-            NavigationLink(value: category) {
-                HStack {
-                    Image(systemName: category.wrappedSystemIcon)
-//                        .foregroundStyle(category.color)
-                        .frame(width: 50)
-                    
-                    Text(category.wrappedName)
+        List {
+            ForEach(vm.categories) { category in
+                //kategorie -> sety -> itd
+                NavigationLink(value: category) {
+                    Label {
+                        Text(category.wrappedName)
+                    } icon: {
+                        Image(systemName: category.wrappedSystemIcon)
+                            .foregroundStyle(category.accentColor.value)
+                    }
                 }
             }
         }
+        .navigationTitle("Kategorie")
         .navigationDestination(for: CategoryEntity.self) { category in
             let vm = StudySetsViewModel(category: category)
             StudySetsView(viewModel: vm)
+                .tint(category.accentColor.value)
         }
         .toolbar {
             ToolbarItem {
-                EditSetButtonSheetView()
+                EditSetButtonSheetView(category: nil)
             }
         }
     }
 }
 
 #Preview {
-    let manager = CoreDataManager.preview
+    let manager = PersistenceController.preview
     let service = CategoryService(manager: manager)
     let vm = StudyViewModel(categoryService: service)
     

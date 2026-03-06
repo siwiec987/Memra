@@ -7,7 +7,8 @@
 
 extension StudySetEntity {
     var wrappedName: String {
-        name ?? ""
+        get { name ?? "" }
+        set { name = newValue }
     }
 
     var tagsSet: Set<TagEntity> {

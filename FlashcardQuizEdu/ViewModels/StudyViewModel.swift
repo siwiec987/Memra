@@ -16,8 +16,8 @@ class StudyViewModel: NSObject {
     var categories: [CategoryEntity] = []
     
     init(
-        categoryService: CategoryService = CategoryService(manager: CoreDataManager.instance),
-        context: NSManagedObjectContext = CoreDataManager.instance.context
+        categoryService: CategoryService = CategoryService(manager: PersistenceController.instance),
+        context: NSManagedObjectContext = PersistenceController.instance.viewContext
     ) {
         self.categoryService = categoryService
         

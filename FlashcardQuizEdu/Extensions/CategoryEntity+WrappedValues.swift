@@ -7,7 +7,8 @@
 
 extension CategoryEntity {
     var wrappedName: String {
-        name ?? ""
+        get { name ?? "" }
+        set { name = newValue }
     }
 
     var wrappedSystemIcon: String {

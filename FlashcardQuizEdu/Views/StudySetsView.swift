@@ -41,7 +41,7 @@ struct StudySetsView: View {
                 EditSetButtonSheetView(category: vm.category)
             }
         }
-        .safeAreaBar(edge: .top) {
+        .safeAreaInset(edge: .top) {
             if !vm.tags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
@@ -67,7 +67,7 @@ struct StudySetsView: View {
 }
 
 #Preview {
-    let manager = CoreDataManager.preview
+    let manager = PersistenceController.preview
     let studySetService = StudySetService(manager: manager)
     let categoryService = CategoryService(manager: manager)
     let category = categoryService.fetchAll().first!

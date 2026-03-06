@@ -38,8 +38,8 @@ class StudySetsViewModel: NSObject {
     
     init(
         category: CategoryEntity,
-        studySetService: StudySetService = StudySetService(manager: CoreDataManager.instance),
-        context: NSManagedObjectContext = CoreDataManager.instance.context
+        studySetService: StudySetService = StudySetService(manager: PersistenceController.instance),
+        context: NSManagedObjectContext = PersistenceController.instance.viewContext
     ) {
         self.category = category
         self.studySetService = studySetService

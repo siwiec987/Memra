@@ -12,6 +12,7 @@ struct flashcardQuizEduApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.managedObjectContext, PersistenceController.instance.viewContext)
         }
     }
 }

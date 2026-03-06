@@ -11,9 +11,9 @@ import Foundation
 class CategoryService: DataService {
     typealias Entity = CategoryEntity
     
-    let manager: CoreDataManager
+    let manager: PersistenceController
 
-    required init(manager: CoreDataManager) {
+    required init(manager: PersistenceController) {
         self.manager = manager
     }
     
@@ -36,11 +36,11 @@ class CategoryService: DataService {
         
         let request = makeFetchRequest(sortedBy: sortOption, direction: direction)
         
-        return (try? manager.context.fetch(request)) ?? []
+        return (try? manager.viewContext.fetch(request)) ?? []
     }
     
     func add(name: String, accentColor: CategoryEntity.AccentColor, systemIcon: String) -> CategoryEntity {
-        let category = CategoryEntity(context: manager.context)
+        let category = CategoryEntity(context: manager.viewContext)
         category.name = name
         category.accentColorRawValue = accentColor.rawValue
         category.systemIcon = systemIcon
@@ -56,7 +56,7 @@ class CategoryService: DataService {
     }
     
     func delete(_ entity: CategoryEntity) {
-        manager.context.delete(entity)
+        manager.viewContext.delete(entity)
         manager.save()
     }
     

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct EditCategoryView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var vm = EditCategoryViewModel()
+    @State private var vm: EditCategoryViewModel
     
     let onSave: ((CategoryEntity) -> Void)?
     
@@ -97,13 +97,13 @@ struct EditCategoryView: View {
                 }
             }
         }
+        .tint(vm.selectedColor.value)
         .navigationTitle(title)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(role: .confirm) {
-                    if let category = vm.save() {
-                        onSave?(category)                        
-                    }
+                    vm.save()
+                    onSave?(vm.selectedCategory)
                     dismiss()
                 }
                 .disabled(vm.isSaveDisabled)
@@ -113,7 +113,8 @@ struct EditCategoryView: View {
 }
 
 #Preview {
+    let vm = EditCategoryViewModel()
     NavigationStack {
-        EditCategoryView()
+        EditCategoryView(viewModel: vm)
     }
 }

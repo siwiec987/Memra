@@ -10,12 +10,7 @@ import SwiftUI
 struct EditSetView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var vm: EditSetViewModel
-    
     @State private var showingConfirmationDialog = false
-    
-    // TODO: Alert o zmianach niezapisanych lub o odrzuceniu nowego zestawu jak w przypomnieniach applowych
-    // TODO: Ogarnij wyświetlanie tych tagów, bo to jest jakieś nieporozumienie co się tu dzieje
-    // TODO: Po dodaniu nowej kategorii vm.selectedCategory powinno zostać zaktualizowane
     
     init(viewModel: EditSetViewModel = EditSetViewModel()) {
         self.vm = viewModel
@@ -30,57 +25,47 @@ struct EditSetView: View {
             Section {
                 Picker("Kategoria", selection: $vm.selectedCategory) {
                     ForEach(vm.categories) { category in
-                        Label(category.wrappedName, systemImage: category.wrappedSystemIcon).tag(category)
+                        Label(category.wrappedName, systemImage: category.wrappedSystemIcon)
+                            .symbolVariant(.fill)
+                            .tint(category.accentColor.value)
+                            .tag(Optional(category))
                     }
                 }
+                .id(vm.selectedCategory?.objectID)
                 
                 NavigationLink("Nowa kategoria") {
-                    EditCategoryView { newCategory in
-                        vm.selectedCategory = newCategory
+                    EditCategoryView() { newCategory in
+                        vm.newCategory(newCategory)
                     }
-                        .tint(.none)
                 }
             }
             
             Section {
                 HStack {
                     TextField("Nowy tag", text: $vm.newTagName)
+                        .onSubmit(vm.addTag)
                     Button {
-                        
+                        vm.addTag()
                     } label: {
                         Image(systemName: "plus")
                             .symbolVariant(.circle.fill)
-                            .tint(.green)
                     }
-                    .disabled(vm.newTagName.isEmpty)
+                    .tint(.green)
+                    .disabled(vm.newTagNameTrimmed.isEmpty)
                 }
                 
-                ForEach(vm.selectedTags) { tag in
-                    Button {
-                        vm.toggleTag(tag)
-                    } label: {
-                        Text("wybrany " + tag.wrappedName)
-                    }
-                }
-                
-                ForEach(vm.initialTags) { tag in
-                    Button {
-                        vm.toggleTag(tag)
-                    } label: {
-                        Text("istniejący " + tag.wrappedName)
-                    }
-                }
-                
-                ForEach(vm.remainingTags) { tag in
-                    Button {
-                        vm.toggleTag(tag)
-                    } label: {
-                        Text(tag.wrappedName)
+                if !vm.tags.isEmpty {
+                    FlowLayout {
+                        ForEach(vm.tags) { tag in
+                            TagButton(name: tag.wrappedName, isSelected: vm.selectedTagIDs.contains(tag.objectID)) {
+                                vm.toggleTag(tag)
+                            }
+                        }
                     }
                 }
             }
-            .buttonStyle(.plain)
         }
+        .tint(vm.selectedCategory?.accentColor.value)
         .navigationTitle(vm.isEditing ? "Edytuj zestaw" : "Nowy zestaw")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -93,29 +78,30 @@ struct EditSetView: View {
             
             ToolbarItem(placement: .cancellationAction) {
                 Button(role: .close) {
-                    showingConfirmationDialog = true
-//                    dismiss()
+                    if vm.hasUnsavedChanges {
+                        showingConfirmationDialog = true
+                    } else {
+                        dismiss()
+                    }
                 }
-                .confirmationDialog("Odrzucić zmiany?", isPresented: $showingConfirmationDialog, titleVisibility: .visible) {
+                .confirmationDialog("Czy na pewno chcesz odrzucić zmiany?", isPresented: $showingConfirmationDialog, titleVisibility: .visible) {
                     Button("Odrzuć", role: .destructive) {
                         dismiss()
                     }
                 }
             }
         }
-        .interactiveDismissDisabled(vm.isSaveDisabled)
+        .interactiveDismissDisabled(vm.hasUnsavedChanges)
     }
 }
 
 #Preview {
     @Previewable @State var isPresented = true
     
-    let manager = CoreDataManager.preview
-    let categoryService = CategoryService(manager: manager)
-    let tagService = TagService(manager: manager)
-    let studySetService = StudySetService(manager: manager)
+    let persistence = PersistenceController.preview
+    let studySetService = StudySetService(manager: persistence)
     let studySet = studySetService.fetchAll(sortedBy: .tagCount, direction: .descending).first!
-    let vm = EditSetViewModel(categoryService: categoryService, tagService: tagService, studySetService: studySetService, selectedStudySet: studySet)
+    let vm = EditSetViewModel(persistence: persistence, studySetID: nil)
     
     NavigationStack {
         Circle().sheet(isPresented: $isPresented) {

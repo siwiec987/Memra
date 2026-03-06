@@ -5,55 +5,55 @@
 //  Created by Jakub Siwiec on 21/02/2026.
 //
 
+import CoreData
 import Foundation
 
 @Observable
 class EditCategoryViewModel {
-    @ObservationIgnored private let categoryService: CategoryService
+    @ObservationIgnored private let editContext: NSManagedObjectContext
+    @ObservationIgnored private let persistence: PersistenceController
     
     var categoryName = ""
     var selectedColor: CategoryEntity.AccentColor = .default
     var selectedIconName = "graduationcap"
     
-    let selectedCategory: CategoryEntity?
+    var selectedCategory: CategoryEntity
+    let isEditing: Bool
     
     init(
-        categoryService: CategoryService = CategoryService(manager: CoreDataManager.instance),
-        category: CategoryEntity? = nil
+        persistence: PersistenceController = PersistenceController.instance,
+        categoryID: NSManagedObjectID? = nil
     ) {
-        self.categoryService = categoryService
+        self.persistence = persistence
+        self.editContext = persistence.newChildContext()
         
-        if let category {
-            self.categoryName = category.wrappedName
-            self.selectedColor = category.accentColor
-            self.selectedIconName = category.wrappedSystemIcon
+        if let categoryID, let category = try? editContext.existingObject(with: categoryID) as? CategoryEntity {
+            self.isEditing = true
             self.selectedCategory = category
+            categoryName = category.wrappedName
+            selectedIconName = category.wrappedSystemIcon
+            selectedColor = category.accentColor
         } else {
-            self.selectedCategory = nil
+            self.isEditing = false
+            self.selectedCategory = CategoryEntity(context: editContext)
         }
     }
     
-    var isEditing: Bool {
-        selectedCategory != nil
-    }
-    
     var isSaveDisabled: Bool {
-        categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-        selectedIconName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        categoryName.trimmed().isEmpty ||
+        selectedIconName.trimmed().isEmpty
     }
     
     var availableColors: [CategoryEntity.AccentColor] {
         CategoryEntity.AccentColor.allCases
     }
     
-    func save() -> CategoryEntity? {
-        if let selectedCategory {
-            categoryService.edit(selectedCategory, name: categoryName, accentColor: selectedColor, systemIcon: selectedIconName)
-        } else {
-            return categoryService.add(name: categoryName, accentColor: selectedColor, systemIcon: selectedIconName)
-        }
-        
-        return nil
+    func save() {
+        let trimmedName = categoryName.trimmed()
+        guard !trimmedName.isEmpty else { return }
+        selectedCategory.name = trimmedName
+        selectedCategory.accentColor = selectedColor
+        selectedCategory.systemIcon = selectedIconName
     }
     
     let icons: [String] = [

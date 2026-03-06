@@ -10,9 +10,9 @@ import Foundation
 class FlashcardService: DataService {
     typealias Entity = FlashcardEntity
     
-    let manager: CoreDataManager
+    let manager: PersistenceController
 
-    required init(manager: CoreDataManager) {
+    required init(manager: PersistenceController) {
         self.manager = manager
     }
     
@@ -23,7 +23,7 @@ class FlashcardService: DataService {
             request.sortDescriptors = [sortedBy.descriptor(for: direction)]
         }
         
-        return (try? manager.context.fetch(request)) ?? []
+        return (try? manager.viewContext.fetch(request)) ?? []
     }
     
     func add(_ entity: FlashcardEntity) {

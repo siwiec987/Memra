@@ -11,9 +11,9 @@ import Foundation
 class StudySetService: DataService {
     typealias Entity = StudySetEntity
     
-    let manager: CoreDataManager
+    let manager: PersistenceController
 
-    required init(manager: CoreDataManager) {
+    required init(manager: PersistenceController) {
         self.manager = manager
     }
     
@@ -47,7 +47,7 @@ class StudySetService: DataService {
     
     func fetchAll(sortedBy sortOption: SortOption? = nil, direction: SortDirection = .ascending) -> [StudySetEntity] {
         let request = makeFetchRequest(sortedBy: sortOption, direction: direction)
-        return (try? manager.context.fetch(request)) ?? []
+        return (try? manager.viewContext.fetch(request)) ?? []
     }
     
     func fetchFiltered(
@@ -57,11 +57,11 @@ class StudySetService: DataService {
         direction: SortDirection = .ascending
     ) -> [StudySetEntity] {
         let request = makeFetchRequest(tags: tags, category: category, sortedBy: sortedBy, direction: direction)
-        return (try? manager.context.fetch(request)) ?? []
+        return (try? manager.viewContext.fetch(request)) ?? []
     }
     
     func add(name: String, category: CategoryEntity, tags: [TagEntity]) {
-        let studySet = StudySetEntity(context: manager.context)
+        let studySet = StudySetEntity(context: manager.viewContext)
         studySet.name = name
         studySet.category = category
         studySet.addToTags(NSSet(array: tags))
@@ -76,7 +76,7 @@ class StudySetService: DataService {
     }
     
     func delete(_ entity: StudySetEntity) {
-        manager.context.delete(entity)
+        manager.viewContext.delete(entity)
         manager.save()
     }
     

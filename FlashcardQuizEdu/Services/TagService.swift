@@ -11,9 +11,9 @@ import Foundation
 class TagService: DataService {
     typealias Entity = TagEntity
     
-    let manager: CoreDataManager
+    let manager: PersistenceController
 
-    required init(manager: CoreDataManager) {
+    required init(manager: PersistenceController) {
         self.manager = manager
     }
     
@@ -24,11 +24,13 @@ class TagService: DataService {
             request.sortDescriptors = [sortedBy.descriptor(for: direction)]
         }
         
-        return (try? manager.context.fetch(request)) ?? []
+        return (try? manager.viewContext.fetch(request)) ?? []
     }
     
-    func add(_ entity: TagEntity) {
-        
+    func add(name: String, studySet: StudySetEntity) {
+        let tag = TagEntity(context: manager.viewContext)
+        tag.addToStudySets(studySet)
+        manager.save()
     }
     
     func delete(_ entity: TagEntity) {
