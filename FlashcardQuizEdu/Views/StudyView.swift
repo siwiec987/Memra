@@ -9,20 +9,26 @@ import SwiftUI
 
 struct StudyView: View {
     @State private var vm: StudyViewModel
-    
+
     init(viewModel: StudyViewModel = StudyViewModel()) {
         self.vm = viewModel
     }
-    
+
     var body: some View {
         List {
             ForEach(vm.categories) { category in
-                //kategorie -> sety -> itd
                 NavigationLink(value: category) {
                     Label {
-                        Text(category.wrappedName)
+                        VStack(alignment: .leading) {
+                            Text(category.wrappedName)
+                                .font(.headline)
+                            Text("Zestawy: \(category.studySetCount)")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     } icon: {
                         Image(systemName: category.wrappedSystemIcon)
+                            .symbolVariant(.fill)
                             .foregroundStyle(category.accentColor.value)
                     }
                 }
@@ -36,6 +42,13 @@ struct StudyView: View {
         }
         .toolbar {
             ToolbarItem {
+                SortingPicker(
+                    optionSelection: $vm.sortOption,
+                    directionSelection: $vm.sortDirection,
+                    directionLabel: vm.directionLabel
+                )
+            }
+            ToolbarItem {
                 EditSetButtonSheetView(category: nil)
             }
         }
@@ -43,11 +56,7 @@ struct StudyView: View {
 }
 
 #Preview {
-    let manager = PersistenceController.preview
-    let service = CategoryService(manager: manager)
-    let vm = StudyViewModel(categoryService: service)
-    
     NavigationStack {
-        StudyView(viewModel: vm)
+        StudyView()
     }
 }
