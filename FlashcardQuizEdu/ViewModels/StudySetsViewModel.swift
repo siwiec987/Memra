@@ -10,16 +10,16 @@ import Foundation
 
 @Observable
 class StudySetsViewModel: NSObject {
-    @ObservationIgnored let studySetService: StudySetService
+    @ObservationIgnored let persistence: PersistenceController
     @ObservationIgnored let category: CategoryEntity
     @ObservationIgnored private var frc: NSFetchedResultsController<StudySetEntity>
     
-    var studySets: [StudySetEntity] = []
-    var tags: [TagEntity] = []
+    private(set) var studySets: [StudySetEntity] = []
+    private(set) var tags: [TagEntity] = []
     
     private(set) var selectedTags: [TagEntity] = []
     
-    var sortOption: StudySetService.SortOption = .name {
+    var sortOption: SortOption = .name {
         didSet {
             reload()
             UserDefaults.standard.set(sortOption.rawValue, forKey: "StudySetsSortOption")
@@ -38,22 +38,23 @@ class StudySetsViewModel: NSObject {
     
     init(
         category: CategoryEntity,
-        studySetService: StudySetService = StudySetService(manager: PersistenceController.instance),
-        context: NSManagedObjectContext = PersistenceController.instance.viewContext
+        persistence: PersistenceController = PersistenceController.instance
     ) {
         self.category = category
-        self.studySetService = studySetService
+        self.persistence = persistence
         
         let savedOption = UserDefaults.standard.string(forKey: "StudySetsSortOption")
-        let initialSortOption = StudySetService.SortOption(rawValue: savedOption ?? "") ?? .name
+        let initialSortOption = SortOption(rawValue: savedOption ?? "") ?? .name
         self.sortOption = initialSortOption
 
         let savedDirection = UserDefaults.standard.integer(forKey: "StudySetsSortDirection")
         let initialSortDirection = SortDirection(rawValue: savedDirection) ?? .descending
         self.sortDirection = initialSortDirection
 
-        let request = studySetService.makeFetchRequest(category: category, sortedBy: initialSortOption, direction: initialSortDirection)
-        self.frc = NSFetchedResultsController(fetchRequest: request, managedObjectContext: context, sectionNameKeyPath: nil, cacheName: nil)
+        let request = StudySetEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "category == %@", category)
+        request.sortDescriptors = [initialSortOption.descriptor(for: initialSortDirection)]
+        self.frc = NSFetchedResultsController(fetchRequest: request, managedObjectContext: persistence.viewContext, sectionNameKeyPath: nil, cacheName: nil)
         
         super.init()
         
@@ -85,9 +86,16 @@ class StudySetsViewModel: NSObject {
     }
     
     private func reload() {
-        let request = studySetService.makeFetchRequest(tags: selectedTags, category: category, sortedBy: sortOption, direction: sortDirection)
-        frc.fetchRequest.predicate = request.predicate
-        frc.fetchRequest.sortDescriptors = request.sortDescriptors
+        var predicates: [NSPredicate] = []
+        
+        if !selectedTags.isEmpty {
+            predicates.append(NSPredicate(format: "ANY tags IN %@", selectedTags))
+        }
+        
+        predicates.append(NSPredicate(format: "category == %@", category))
+        
+        frc.fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        frc.fetchRequest.sortDescriptors = [sortOption.descriptor(for: sortDirection)]
         try? frc.performFetch()
         syncFromFRC()
     }
@@ -98,15 +106,48 @@ class StudySetsViewModel: NSObject {
     }
     
     private func updateTags() {
-        let tagSet = studySets.reduce(into: Set<TagEntity>()) { result, set in
-            result.formUnion(set.tagsSet)
-        }
-        tags = tagSet.sorted {
-            ($0.studySetCount != $1.studySetCount) ?
-            ($0.studySetCount > $1.studySetCount) :
-            ($0.wrappedName > $1.wrappedName)
-        }
+        let request = TagEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "ANY studySets.category == %@", category)
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "studySetCount", ascending: false),
+            NSSortDescriptor(key: "name", ascending: true)
+        ]
+        
+        tags = (try? persistence.viewContext.fetch(request)) ?? []
         selectedTags.removeAll { !tags.contains($0) }
+    }
+    
+    enum SortOption: String, CaseIterable, Identifiable {
+        case name = "Nazwa"
+        case createdAt = "Data utworzenia"
+        case flashcardCount = "Liczba fiszek"
+        case tagCount = "Liczba tagów"
+        
+        func directionLabel(for direction: SortDirection) -> String {
+            let ascending = direction == .ascending
+            return switch self {
+            case .name, .flashcardCount, .tagCount:
+                ascending ? "Rosnąco" : "Malejąco"
+            case .createdAt:
+                ascending ? "Od najstarszych" : "Od najnowszych"
+            }
+        }
+        
+        func descriptor(for direction: SortDirection) -> NSSortDescriptor {
+            let ascending = direction == .ascending
+            return switch self {
+            case .name:
+                NSSortDescriptor(key: "name", ascending: ascending)
+            case .createdAt:
+                NSSortDescriptor(key: "createdAt", ascending: ascending)
+            case .flashcardCount:
+                NSSortDescriptor(key: "flashcardCount", ascending: ascending)
+            case .tagCount:
+                NSSortDescriptor(key: "tagCount", ascending: ascending)
+            }
+        }
+        
+        var id: String { rawValue }
     }
 }
 

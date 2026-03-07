@@ -68,14 +68,9 @@ struct StudySetsView: View {
 
 #Preview {
     let manager = PersistenceController.preview
-    let studySetService = StudySetService(manager: manager)
     let categoryService = CategoryService(manager: manager)
     let category = categoryService.fetchAll().first!
-    
-    let vm = StudySetsViewModel(
-        category: category,
-        studySetService: studySetService
-    )
+    let vm = StudySetsViewModel(category: category)
     
     NavigationStack {
         StudySetsView(viewModel: vm)
