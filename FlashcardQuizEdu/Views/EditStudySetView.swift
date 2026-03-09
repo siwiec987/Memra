@@ -1,5 +1,5 @@
 //
-//  EditSetView.swift
+//  EditStudySetView.swift
 //  FlashcardQuizEdu
 //
 //  Created by Jakub Siwiec on 20/02/2026.
@@ -7,14 +7,14 @@
 
 import SwiftUI
 
-struct EditSetView: View {
+struct EditStudySetView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var vm: EditSetViewModel
+    @State private var vm: EditStudySetViewModel
     @State private var showingConfirmationDialog = false
     
     private let tagAnimation = Animation.spring(response: 0.3, dampingFraction: 0.7)
     
-    init(viewModel: EditSetViewModel = EditSetViewModel()) {
+    init(viewModel: EditStudySetViewModel) {
         self.vm = viewModel
     }
     
@@ -100,6 +100,7 @@ struct EditSetView: View {
                 }
             }
         }
+        .tint(.none)
         .interactiveDismissDisabled(vm.hasUnsavedChanges)
     }
     
@@ -114,12 +115,13 @@ struct EditSetView: View {
     let persistence = PersistenceController.preview
     let studySetService = StudySetService(manager: persistence)
     let studySet = studySetService.fetchAll(sortedBy: .tagCount, direction: .descending).first!
-    let vm = EditSetViewModel(persistence: persistence, studySetID: nil)
+    
+    let vm = EditStudySetViewModel(persistence: persistence, creatingIn: nil)
     
     NavigationStack {
         Circle().sheet(isPresented: $isPresented) {
             NavigationStack {
-                EditSetView(viewModel: vm)
+                EditStudySetView(viewModel: vm)
             }
         }
     }

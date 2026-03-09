@@ -9,23 +9,29 @@ import SwiftUI
 
 struct StudySetsView: View {
     @State private var vm: StudySetsViewModel
+    @State private var editingViewModel: EditStudySetViewModel?
+    @State private var activeAlert: ActiveAlert?
+    
+    private let tagAnimation = Animation.spring(response: 0.3, dampingFraction: 0.7)
     
     init(viewModel: StudySetsViewModel) {
         self.vm = viewModel
     }
     
-    private let tagAnimation = Animation.spring(response: 0.3, dampingFraction: 0.7)
-    
     var body: some View {
         List {
             Section {
                 if vm.studySets.isEmpty {
-                    ContentUnavailableView("Brak wyników", systemImage: "rectangle.stack.slash", description: Text("Dodaj se nowy secik mordzia"))
-                        .listRowInsets(.init())
+                    ContentUnavailableView("Brak wyników", systemImage: "rectangle.stack.slash", description: Text("Dodaj nowy zestaw, aby rozpocząć."))
                         .listRowBackground(Color.clear)
                 } else {
-                    ForEach(vm.studySets) { set in
-                        Text(set.wrappedName)
+                    ForEach(vm.studySets) { studySet in
+                        Text(studySet.wrappedName)
+                            .swipeEditDeleteActions {
+                                onDelete(of: studySet)
+                            } onEdit: {
+                                openEditSheet(for: studySet)
+                            }
                     }
                 }
             }
@@ -38,7 +44,7 @@ struct StudySetsView: View {
             }
             ToolbarSpacer(.fixed)
             ToolbarItem {
-                EditSetButtonSheetView(category: vm.category)
+                EditStudySetButtonSheetView(category: vm.category)
             }
         }
         .safeAreaInset(edge: .top) {
@@ -63,14 +69,65 @@ struct StudySetsView: View {
                 }
             }
         }
+        .sheet(item: $editingViewModel) { vm in
+            NavigationStack {
+                EditStudySetView(viewModel: vm)
+            }
+        }
+        .alert(item: $activeAlert) { alert in
+            switch alert {
+            case .delete(let studySet):
+                return Alert(
+                    title: Text("Usunąć \(studySet.wrappedName)?"),
+                    message: Text("Spowoduje to usunięcie całej zawartości tego zestawu."),
+                    primaryButton: .destructive(Text("Usuń")) {
+                        vm.delete(studySet)
+                    },
+                    secondaryButton: .cancel(Text("Anuluj"))
+                )
+
+            case .editError(let error):
+                return Alert(
+                    title: Text(error.errorDescription ?? "Błąd"),
+                    message: Text(error.failureReason ?? ""),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
+        }
+    }
+    
+    private func openEditSheet(for studySet: StudySetEntity) {
+        do {
+            editingViewModel = try EditStudySetViewModel(editing: studySet.objectID)
+        } catch let error as EditStudySetError {
+            activeAlert = .editError(error)
+        } catch {
+            assertionFailure("Unexpected error: \(error)")
+        }
+    }
+    
+    private func onDelete(of studySet: StudySetEntity) {
+        activeAlert = .delete(studySet)
+    }
+    
+    private enum ActiveAlert: Identifiable {
+        case delete(StudySetEntity)
+        case editError(EditStudySetError)
+        
+        var id: String {
+            switch self {
+            case .delete(let set): "delete-\(set.objectID.uriRepresentation().absoluteString)"
+            case .editError(let error): "error-\(error.localizedDescription)"
+            }
+        }
     }
 }
 
 #Preview {
-    let manager = PersistenceController.preview
-    let categoryService = CategoryService(manager: manager)
+    let persistence = PersistenceController.preview
+    let categoryService = CategoryService(manager: persistence)
     let category = categoryService.fetchAll().first!
-    let vm = StudySetsViewModel(category: category)
+    let vm = StudySetsViewModel(category: category, persistence: persistence)
     
     NavigationStack {
         StudySetsView(viewModel: vm)

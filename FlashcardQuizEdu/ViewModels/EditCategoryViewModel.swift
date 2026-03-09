@@ -22,21 +22,29 @@ class EditCategoryViewModel {
     
     init(
         persistence: PersistenceController = PersistenceController.instance,
-        categoryID: NSManagedObjectID? = nil
+        editing categoryID: NSManagedObjectID
+    ) throws {
+        self.persistence = persistence
+        self.editContext = persistence.newChildContext()
+        self.isEditing = true
+
+        guard let category = try? editContext.existingObject(with: categoryID) as? CategoryEntity else {
+            throw EditCategoryError.categoryNotFound
+        }
+
+        self.selectedCategory = category
+        categoryName = category.wrappedName
+        selectedIconName = category.wrappedSystemIcon
+        selectedColor = category.accentColor
+    }
+
+    init(
+        persistence: PersistenceController = PersistenceController.instance
     ) {
         self.persistence = persistence
         self.editContext = persistence.newChildContext()
-        
-        if let categoryID, let category = try? editContext.existingObject(with: categoryID) as? CategoryEntity {
-            self.isEditing = true
-            self.selectedCategory = category
-            categoryName = category.wrappedName
-            selectedIconName = category.wrappedSystemIcon
-            selectedColor = category.accentColor
-        } else {
-            self.isEditing = false
-            self.selectedCategory = CategoryEntity(context: editContext)
-        }
+        self.isEditing = false
+        self.selectedCategory = CategoryEntity(context: editContext)
     }
     
     var isSaveDisabled: Bool {

@@ -32,6 +32,12 @@ struct StudyView: View {
                             .foregroundStyle(category.accentColor.value)
                     }
                 }
+                .swipeEditDeleteActions {
+                    
+                } onEdit: {
+                    openEditSheet(for: category)
+                }
+
             }
         }
         .navigationTitle("Kategorie")
@@ -49,9 +55,17 @@ struct StudyView: View {
                 )
             }
             ToolbarItem {
-                EditSetButtonSheetView(category: nil)
+                EditStudySetButtonSheetView(category: nil)
             }
         }
+    }
+    
+    private func openEditSheet(for category: CategoryEntity) {
+        
+    }
+    
+    private func onDelete(of category: CategoryEntity) {
+        
     }
 }
 

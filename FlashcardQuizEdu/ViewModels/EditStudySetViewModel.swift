@@ -1,5 +1,5 @@
 //
-//  EditSetViewModel.swift
+//  EditStudySetViewModel.swift
 //  FlashcardQuizEdu
 //
 //  Created by Jakub Siwiec on 23/02/2026.
@@ -9,7 +9,7 @@ import CoreData
 import Foundation
 
 @Observable
-class EditSetViewModel {
+class EditStudySetViewModel: Identifiable {
     @ObservationIgnored let editContext: NSManagedObjectContext
     @ObservationIgnored private let persistence: PersistenceController
     @ObservationIgnored private var initialSnapshot: StudySetSnapshot?
@@ -27,37 +27,33 @@ class EditSetViewModel {
     
     let isEditing: Bool
     
+    init (
+        persistence: PersistenceController = PersistenceController.instance,
+        editing studySetID: NSManagedObjectID
+    ) throws {
+        self.persistence = persistence
+        self.editContext = persistence.newChildContext()
+        self.isEditing = true
+        
+        guard let studySet = try? editContext.existingObject(with: studySetID) as? StudySetEntity else {
+            throw EditStudySetError.studySetNotFound
+        }
+        self.selectedStudySet = studySet
+        
+        bootstrapState(defaultCategoryID: nil)
+    }
+    
     init(
         persistence: PersistenceController = PersistenceController.instance,
-        studySetID: NSManagedObjectID? = nil,
-        categoryID: NSManagedObjectID? = nil
+        creatingIn categoryID: NSManagedObjectID?
     ) {
         self.persistence = persistence
         self.editContext = persistence.newChildContext()
+        self.isEditing = false
         
-        if let studySetID, let studySet = try? editContext.existingObject(with: studySetID) as? StudySetEntity {
-            self.selectedStudySet = studySet
-            self.isEditing = true
-        } else {
-            self.selectedStudySet = StudySetEntity(context: editContext)
-            self.isEditing = false
-        }
+        self.selectedStudySet = StudySetEntity(context: editContext)
         
-        fetchCategories()
-        fetchTags()
-        
-        if self.selectedStudySet.category == nil {
-            if let categoryID, let category = try? editContext.existingObject(with: categoryID) as? CategoryEntity {
-                self.selectedStudySet.category = category
-            } else {
-                self.selectedStudySet.category = categories.first
-            }
-        }
-        
-        self.studySetName = selectedStudySet.wrappedName
-        self.selectedCategory = selectedStudySet.category
-        self.selectedTagIDs = Set(selectedStudySet.tagsSet.map { $0.objectID })
-        takeSnapshot()
+        bootstrapState(defaultCategoryID: categoryID)
     }
     
     var tagsSorted: [TagEntity] {
@@ -80,6 +76,24 @@ class EditSetViewModel {
                 selectedCategory?.objectID != snapshot.categoryID ||
                 selectedTagIDs != snapshot.tagIDs ||
                 !newTagNameTrimmed.isEmpty
+    }
+    
+    private func bootstrapState(defaultCategoryID categoryID: NSManagedObjectID?) {
+        fetchCategories()
+        fetchTags()
+        
+        if selectedStudySet.category == nil {
+            if let categoryID, let category = try? editContext.existingObject(with: categoryID) as? CategoryEntity {
+                self.selectedStudySet.category = category
+            } else {
+                self.selectedStudySet.category = categories.first
+            }
+        }
+        
+        studySetName = selectedStudySet.wrappedName
+        selectedCategory = selectedStudySet.category
+        selectedTagIDs = Set(selectedStudySet.tagsSet.map { $0.objectID })
+        takeSnapshot()
     }
     
     private func takeSnapshot() {
@@ -122,11 +136,10 @@ class EditSetViewModel {
             }
         }
         
-        guard selectedStudySet.category != nil else { return print("Kategoria pusta") }
-        guard !selectedStudySet.wrappedName.isEmpty else { return print("nazwa pusta")}
+        guard selectedStudySet.category != nil else { return }
+        guard !selectedStudySet.wrappedName.isEmpty else { return }
         guard ((try? editContext.save()) != nil) else { return }
         persistence.save()
-        print("Dochodzimy tu w ogole?")
     }
     
     func newCategory(_ category: CategoryEntity) {
