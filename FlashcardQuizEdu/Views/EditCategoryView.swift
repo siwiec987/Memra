@@ -5,11 +5,14 @@
 //  Created by Jakub Siwiec on 21/02/2026.
 //
 
+import CoreData
 import SwiftUI
 
 struct EditCategoryView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var vm: EditCategoryViewModel
+    
+    @State private var showingConfirmationDialog = false
     
     let onSave: ((CategoryEntity) -> Void)?
     
@@ -108,7 +111,25 @@ struct EditCategoryView: View {
                 }
                 .disabled(vm.isSaveDisabled)
             }
+            
+            if vm.isEditing {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(role: .close) {
+                        if vm.hasUnsavedChanges {
+                            showingConfirmationDialog = true
+                        } else {
+                            dismiss()
+                        }
+                    }
+                    .confirmationDialog("Czy na pewno chcesz odrzucić zmiany?", isPresented: $showingConfirmationDialog, titleVisibility: .visible) {
+                        Button("Odrzuć", role: .destructive) {
+                            dismiss()
+                        }
+                    }
+                }
+            }
         }
+        .interactiveDismissDisabled(vm.hasUnsavedChanges)
     }
 }
 

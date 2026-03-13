@@ -9,9 +9,10 @@ import CoreData
 import Foundation
 
 @Observable
-class EditCategoryViewModel {
+class EditCategoryViewModel: Identifiable {
     @ObservationIgnored private let editContext: NSManagedObjectContext
     @ObservationIgnored private let persistence: PersistenceController
+    @ObservationIgnored private var initialSnapshot: CategorySnapshot?
     
     var categoryName = ""
     var selectedColor: CategoryEntity.AccentColor = .default
@@ -36,6 +37,8 @@ class EditCategoryViewModel {
         categoryName = category.wrappedName
         selectedIconName = category.wrappedSystemIcon
         selectedColor = category.accentColor
+        
+        takeSnapshot()
     }
 
     init(
@@ -56,12 +59,33 @@ class EditCategoryViewModel {
         CategoryEntity.AccentColor.allCases
     }
     
+    var hasUnsavedChanges: Bool {
+        guard let snapshot = initialSnapshot else { return false }
+        
+        return categoryName.trimmed() != snapshot.name ||
+                selectedColor != snapshot.color ||
+                selectedIconName != snapshot.iconName
+    }
+    
+    private func takeSnapshot() {
+        initialSnapshot = CategorySnapshot(
+            name: categoryName.trimmed(),
+            color: selectedColor,
+            iconName: selectedIconName.trimmed()
+        )
+    }
+    
     func save() {
         let trimmedName = categoryName.trimmed()
         guard !trimmedName.isEmpty else { return }
         selectedCategory.name = trimmedName
         selectedCategory.accentColor = selectedColor
         selectedCategory.systemIcon = selectedIconName
+        
+        if isEditing {
+            guard (try? editContext.save()) != nil else { return }
+            persistence.save()
+        }
     }
     
     let icons: [String] = [
@@ -163,4 +187,10 @@ class EditCategoryViewModel {
         "waveform",
         "translate",
     ]
+    
+    private struct CategorySnapshot {
+        let name: String
+        let color: CategoryEntity.AccentColor
+        let iconName: String
+    }
 }
