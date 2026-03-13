@@ -1,5 +1,5 @@
 //
-//  CategoriesGridViewModel.swift
+//  StudyViewModel.swift
 //  FlashcardQuizEdu
 //
 //  Created by Jakub Siwiec on 16/02/2026.
@@ -52,6 +52,11 @@ class StudyViewModel: NSObject {
     
     func directionLabel(for direction: SortDirection) -> String {
         sortOption.directionLabel(for: direction)
+    }
+    
+    func delete(_ category: CategoryEntity) {
+        persistence.viewContext.delete(category)
+        persistence.save()
     }
     
     private func reload() {

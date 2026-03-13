@@ -88,7 +88,6 @@ class StudySetsViewModel: NSObject {
     func delete(_ studySet: StudySetEntity) {
         persistence.viewContext.delete(studySet)
         persistence.save()
-        persistence.viewContext.refreshAllObjects()
     }
     
     private func reload() {

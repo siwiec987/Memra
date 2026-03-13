@@ -26,11 +26,15 @@ struct StudySetsView: View {
                         .listRowBackground(Color.clear)
                 } else {
                     ForEach(vm.studySets) { studySet in
-                        Text(studySet.wrappedName)
+                        StudySetRowView(studySet: studySet)
                             .swipeEditDeleteActions {
-                                onDelete(of: studySet)
+                                withAnimation {
+                                    onDelete(of: studySet)
+                                }
                             } onEdit: {
-                                openEditSheet(for: studySet)
+                                withAnimation {
+                                    openEditSheet(for: studySet)
+                                }
                             }
                     }
                 }
@@ -81,7 +85,9 @@ struct StudySetsView: View {
                     title: Text("Usunąć \(studySet.wrappedName)?"),
                     message: Text("Spowoduje to usunięcie całej zawartości tego zestawu."),
                     primaryButton: .destructive(Text("Usuń")) {
-                        vm.delete(studySet)
+                        withAnimation {
+                            vm.delete(studySet)
+                        }
                     },
                     secondaryButton: .cancel(Text("Anuluj"))
                 )

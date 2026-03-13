@@ -9,6 +9,8 @@ import SwiftUI
 
 struct StudyView: View {
     @State private var vm: StudyViewModel
+    @State private var editingViewModel: EditCategoryViewModel?
+    @State private var activeAlert: ActiveAlert?
 
     init(viewModel: StudyViewModel = StudyViewModel()) {
         self.vm = viewModel
@@ -17,27 +19,12 @@ struct StudyView: View {
     var body: some View {
         List {
             ForEach(vm.categories) { category in
-                NavigationLink(value: category) {
-                    Label {
-                        VStack(alignment: .leading) {
-                            Text(category.wrappedName)
-                                .font(.headline)
-                            Text("Zestawy: \(category.studySetCount)")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    } icon: {
-                        Image(systemName: category.wrappedSystemIcon)
-                            .symbolVariant(.fill)
-                            .foregroundStyle(category.accentColor.value)
+                CategoryRowView(category: category)
+                    .swipeEditDeleteActions {
+                        onDelete(of: category)
+                    } onEdit: {
+                        openEditSheet(for: category)
                     }
-                }
-                .swipeEditDeleteActions {
-                    
-                } onEdit: {
-                    openEditSheet(for: category)
-                }
-
             }
         }
         .navigationTitle("Kategorie")
@@ -58,14 +45,59 @@ struct StudyView: View {
                 EditStudySetButtonSheetView(category: nil)
             }
         }
+        .sheet(item: $editingViewModel) { vm in
+            NavigationStack {
+                EditCategoryView(viewModel: vm)
+            }
+        }
+        .alert(item: $activeAlert) { alert in
+            switch alert {
+            case .delete(let category):
+                return Alert(
+                    title: Text("Usunąć \(category.wrappedName)?"),
+                    message: Text("Spowoduje to usunięcie całej zawartości tej kategorii."),
+                    primaryButton: .destructive(Text("Usuń")) {
+                        withAnimation {
+                            vm.delete(category)
+                        }
+                    },
+                    secondaryButton: .cancel(Text("Anuluj"))
+                )
+
+            case .editError(let error):
+                return Alert(
+                    title: Text(error.errorDescription ?? "Błąd"),
+                    message: Text(error.failureReason ?? ""),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
+        }
     }
     
     private func openEditSheet(for category: CategoryEntity) {
-        
+        do {
+            editingViewModel = try EditCategoryViewModel(editing: category.objectID)
+        } catch let error as EditCategoryError {
+            activeAlert = .editError(error)
+        } catch {
+            assertionFailure("Unexpected error: \(error)")
+        }
     }
     
     private func onDelete(of category: CategoryEntity) {
+        activeAlert = .delete(category)
+    }
+    
+    private enum ActiveAlert: Identifiable {
+        case delete(CategoryEntity)
+        case editError(EditCategoryError)
         
+        var id: String {
+            switch self {
+            case .delete(let category): "delete-\(category.objectID.uriRepresentation().absoluteString)"
+            case .editError(let error): "error-\(error.localizedDescription)"
+            }
+        }
     }
 }
 
