@@ -20,7 +20,7 @@ struct SwipeEditDeleteActions: ViewModifier {
     func body(content: Content) -> some View {
         content
             .swipeActions(allowsFullSwipe: true) {
-                Button("Usuń", systemImage: "trash.fill", role: .destructive, action: onDelete)
+                Button("Usuń", systemImage: "trash.fill", action: onDelete)
                 .tint(.red)
             }
             .swipeActions {
