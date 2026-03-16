@@ -6,7 +6,7 @@
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="studySetCount" optional="YES" attributeType="Integer 64" derived="YES" derivationExpression="studySets.@count" usesScalarValueType="YES"/>
         <attribute name="systemIcon" optional="YES" attributeType="String"/>
-        <relationship name="studySets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="StudySetEntity" inverseName="category" inverseEntity="StudySetEntity"/>
+        <relationship name="studySets" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="StudySetEntity" inverseName="category" inverseEntity="StudySetEntity"/>
     </entity>
     <entity name="FlashcardEntity" representedClassName="FlashcardEntity" syncable="YES" codeGenerationType="class">
         <attribute name="answer" optional="YES" attributeType="String"/>
@@ -20,7 +20,7 @@
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="tagCount" optional="YES" attributeType="Integer 64" derived="YES" derivationExpression="tags.@count" usesScalarValueType="YES"/>
         <relationship name="category" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CategoryEntity" inverseName="studySets" inverseEntity="CategoryEntity"/>
-        <relationship name="flashcards" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="FlashcardEntity" inverseName="studySet" inverseEntity="FlashcardEntity"/>
+        <relationship name="flashcards" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="FlashcardEntity" inverseName="studySet" inverseEntity="FlashcardEntity"/>
         <relationship name="tags" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TagEntity" inverseName="studySets" inverseEntity="TagEntity"/>
     </entity>
     <entity name="TagEntity" representedClassName="TagEntity" syncable="YES" codeGenerationType="class">
