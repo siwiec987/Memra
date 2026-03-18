@@ -25,6 +25,10 @@ class GenerateWithAIViewModel {
         Int(questionCount.rounded())
     }
     
+    var isGenerationDisabled: Bool {
+        importedFiles.isEmpty || (flashcardCountRounded == 0 && questionCountRounded == 0)
+    }
+    
     func handleFileImport(_ result: Result<[URL], any Error>) {
         switch result {
         case .success(let urls):
