@@ -12,6 +12,8 @@ class GenerateWithAIViewModel {
     private(set) var importedFiles: [ImportedFile] = []
     private(set) var failedFiles: [FailedImport] = []
     
+    private var extractedDocuments: [ExtractedDocument] = []
+    
     var error: ImportError?
     
     var flashcardCount = 5.0
@@ -41,17 +43,35 @@ class GenerateWithAIViewModel {
     private func handleUrls(_ urls: [URL]) {
         urls.forEach { url in
             guard url.startAccessingSecurityScopedResource() else { return }
-            defer { url.stopAccessingSecurityScopedResource() }
             
             let alreadyExists = importedFiles.contains { $0.url == url }
-            if !alreadyExists {
-                do {
-                    let newFile = try ImportedFile(url: url)
-                    importedFiles.append(newFile)
-                } catch {
-                    let newFail = FailedImport(fileName: url.lastPathComponent, error: error)
-                    failedFiles.append(newFail)
+            guard !alreadyExists else {
+                url.stopAccessingSecurityScopedResource()
+                return
+            }
+            
+            let extractor = PDFDocumentExtractor(imageExtractor: ImageExtractor())
+            do {
+                let newFile = try ImportedFile(url: url)
+                importedFiles.append(newFile)
+                print("JESTES TU?")
+                Task {
+                    print("A TU?")
+                    defer { url.stopAccessingSecurityScopedResource() }
+                    let start = Date()
+                    let newDocument = try? await extractor.extract(from: newFile)
+                    if let newDocument {
+                        print("A TU KURDE JESTEŚ?")
+                        extractedDocuments.append(newDocument)
+                        print(newDocument.rawText)
+                    }
+                    print(Date().timeIntervalSince(start))
                 }
+                
+            } catch {
+                url.stopAccessingSecurityScopedResource()
+                let newFail = FailedImport(fileName: url.lastPathComponent, error: error)
+                failedFiles.append(newFail)
             }
         }
     }
