@@ -9,6 +9,7 @@ import CoreData
 import Foundation
 
 @Observable
+@MainActor
 class StudySetsViewModel: NSObject {
     @ObservationIgnored let persistence: PersistenceController
     @ObservationIgnored let category: CategoryEntity
@@ -156,7 +157,7 @@ class StudySetsViewModel: NSObject {
     }
 }
 
-extension StudySetsViewModel: NSFetchedResultsControllerDelegate {
+extension StudySetsViewModel: @MainActor NSFetchedResultsControllerDelegate {
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<any NSFetchRequestResult>) {
         guard let objects = controller.fetchedObjects as? [StudySetEntity] else { return }
         studySets = objects

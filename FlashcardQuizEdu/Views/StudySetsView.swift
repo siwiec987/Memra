@@ -131,8 +131,7 @@ struct StudySetsView: View {
 
 #Preview {
     let persistence = PersistenceController.preview
-    let categoryService = CategoryService(manager: persistence)
-    let category = categoryService.fetchAll().first!
+    let category = try! persistence.viewContext.fetch(CategoryEntity.fetchRequest()).first!
     let vm = StudySetsViewModel(category: category, persistence: persistence)
     
     NavigationStack {

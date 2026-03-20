@@ -113,9 +113,6 @@ struct EditStudySetView: View {
     @Previewable @State var isPresented = true
     
     let persistence = PersistenceController.preview
-//    let studySetService = StudySetService(manager: persistence)
-//    let studySet = studySetService.fetchAll(sortedBy: .tagCount, direction: .descending).first!
-    
     let vm = EditStudySetViewModel(persistence: persistence, creatingIn: nil)
     
     NavigationStack {

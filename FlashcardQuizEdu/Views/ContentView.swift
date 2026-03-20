@@ -35,18 +35,5 @@ struct ContentView: View {
 }
 
 #Preview {
-//    let manager = CoreDataManager.preview
-//    let service = CategoryService(manager: manager)
-//    let vm = StudyViewModel(categoryService: service)
-    
     ContentView()
-    
-//    do {
-//        let previewer = try Previewer()
-//        
-//        return ContentView()
-//            .modelContainer(previewer.container)
-//    } catch {
-//        return Text(error.localizedDescription)
-//    }
 }

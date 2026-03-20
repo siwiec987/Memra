@@ -7,6 +7,7 @@
 
 import CoreData
 
+@MainActor
 final class PersistenceController {
     static let instance = PersistenceController()
     
@@ -29,13 +30,13 @@ final class PersistenceController {
         }
         
         viewContext.automaticallyMergesChangesFromParent = true
-        viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        viewContext.mergePolicy = NSMergePolicy(merge: .mergeByPropertyObjectTrumpMergePolicyType)
     }
     
     func newChildContext() -> NSManagedObjectContext {
         let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
         context.parent = viewContext
-        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.mergePolicy = NSMergePolicy(merge: .mergeByPropertyObjectTrumpMergePolicyType)
         return context
     }
     
@@ -51,13 +52,7 @@ final class PersistenceController {
 }
 
 extension PersistenceController {
-    private static var _previewInstance: PersistenceController?
-    
     static var preview: PersistenceController {
-        if let existing = _previewInstance {
-            return existing
-        }
-        
         let manager = PersistenceController(inMemory: true)
         let context = manager.viewContext
         
@@ -91,7 +86,6 @@ extension PersistenceController {
         }
         
         manager.save()
-        _previewInstance = manager
         return manager
     }
 }

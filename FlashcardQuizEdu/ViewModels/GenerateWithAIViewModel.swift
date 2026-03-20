@@ -8,6 +8,7 @@
 import Foundation
 
 @Observable
+@MainActor
 class GenerateWithAIViewModel {
     private(set) var importedFiles: [ImportedFile] = []
     private(set) var failedFiles: [FailedImport] = []
@@ -54,20 +55,14 @@ class GenerateWithAIViewModel {
             do {
                 let newFile = try ImportedFile(url: url)
                 importedFiles.append(newFile)
-                print("JESTES TU?")
                 Task {
-                    print("A TU?")
                     defer { url.stopAccessingSecurityScopedResource() }
-                    let start = Date()
                     let newDocument = try? await extractor.extract(from: newFile)
                     if let newDocument {
-                        print("A TU KURDE JESTEŚ?")
                         extractedDocuments.append(newDocument)
                         print(newDocument.rawText)
                     }
-                    print(Date().timeIntervalSince(start))
                 }
-                
             } catch {
                 url.stopAccessingSecurityScopedResource()
                 let newFail = FailedImport(fileName: url.lastPathComponent, error: error)

@@ -9,6 +9,7 @@ import CoreData
 import Foundation
 
 @Observable
+@MainActor
 class EditCategoryViewModel: Identifiable {
     @ObservationIgnored private let editContext: NSManagedObjectContext
     @ObservationIgnored private let persistence: PersistenceController
