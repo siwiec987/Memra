@@ -27,19 +27,20 @@ struct PDFDocumentExtractor: DocumentExtractor {
     }
     
     private func extractText(from pdf: PDFDocument) async throws -> [ExtractedPage] {
-        var renderedPages: [CGImage] = []
+        var renderedPages: [Int: CGImage] = [:]
         var extractedPages: [ExtractedPage] = []
         
         for pageNumber in 0..<pdf.pageCount {
             guard let page = pdf.page(at: pageNumber) else { continue }
             guard let image = drawPDFPage(page) else { continue }
-            renderedPages.append(image)
+            renderedPages[pageNumber] = image
         }
         
         extractedPages = try await withThrowingTaskGroup { group in
             let maxTasks = min(5, pdf.pageCount)
             for index in 0..<maxTasks {
-                let page = renderedPages[index]
+                guard let page = renderedPages[index] else { continue }
+                renderedPages.removeValue(forKey: index)
                 group.addTask {
                     let extractedPage = try await imageExtractor.extract(from: page)
                     return (index, extractedPage)
@@ -51,10 +52,10 @@ struct PDFDocumentExtractor: DocumentExtractor {
             for try await (pageNumber, page) in group {
                 allPages[pageNumber] = page
                 
-                if nextIndex < renderedPages.count {
+                if nextIndex < pdf.pageCount {
                     let currentIndex = nextIndex
-                    let page = renderedPages[currentIndex]
-                    renderedPages.remove(at: currentIndex)
+                    guard let page = renderedPages[currentIndex] else { continue }
+                    renderedPages.removeValue(forKey: currentIndex)
                     group.addTask {
                         let extractedPage = try await imageExtractor.extract(from: page)
                         return (currentIndex, extractedPage)
