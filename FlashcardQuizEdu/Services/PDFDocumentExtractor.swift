@@ -11,88 +11,76 @@ import PDFKit
 struct PDFDocumentExtractor: DocumentExtractor {
     let imageExtractor: ImageExtractor
     
+    init(imageExtractor: ImageExtractor = ImageExtractor()) {
+        self.imageExtractor = imageExtractor
+    }
+    
     func extract(from file: ImportedFile) async throws -> ExtractedDocument {
-        guard let document = PDFDocument(url: file.url) else {
-            throw ExtractError.fileUnreadable
-        }
+        guard let pdf = PDFDocument(url: file.url) else { throw ExtractError.fileUnreadable }
+        let pages = try await extractText(from: pdf)
         
-        let content = try await extractText(from: document)
-        guard !content.isEmpty else {
+        guard !pages.isEmpty else {
             throw ExtractError.fileEmpty
         }
         
-        return ExtractedDocument(sourceFileID: file.id, rawText: content, chunks: [])
+        return ExtractedDocument(sourceFileID: file.id, pages: pages)
     }
     
-    private func extractText(from document: PDFDocument) async throws -> String {
-        print("START extractText, stron:", document.pageCount)
-        let result = try await withThrowingTaskGroup(of: (Int, String).self) { group in
-            for pageNumber in 0..<document.pageCount {
+    private func extractText(from pdf: PDFDocument) async throws -> [ExtractedPage] {
+        var renderedPages: [CGImage] = []
+        var extractedPages: [ExtractedPage] = []
+        
+        for pageNumber in 0..<pdf.pageCount {
+            guard let page = pdf.page(at: pageNumber) else { continue }
+            guard let image = drawPDFPage(page) else { continue }
+            renderedPages.append(image)
+        }
+        
+        extractedPages = try await withThrowingTaskGroup { group in
+            let maxTasks = min(5, pdf.pageCount)
+            for index in 0..<maxTasks {
+                let page = renderedPages[index]
                 group.addTask {
-                    print("START strona", pageNumber)
-                    guard let page = document.page(at: pageNumber)?.pageRef else {
-                        throw ExtractError.couldNotOpenPage(number: pageNumber)
-                    }
-                    print("PAGE OK", pageNumber)
-                    guard let cgImage = drawPDFPage(page: page)?.cgImage else {
-                        throw ExtractError.couldNotOpenPage(number: pageNumber)
-                    }
-                    print("IMAGE OK", pageNumber)
-                    let text = (try? await imageExtractor.extract(from: cgImage)) ?? ""
-                    print("OCR OK", pageNumber)
-                    print(text.prefix(30))
-                    return (pageNumber, text)
+                    let extractedPage = try await imageExtractor.extract(from: page)
+                    return (index, extractedPage)
                 }
             }
             
-            return try await group.reduce(into: [(Int, String)]()) { $0.append($1) }
-                .sorted { $0.0 < $1.0 }
-                .map { $0.1 }
-                .joined(separator: "\n")
-        }
-        print("END extractText")
-        return result
-    }
-    
-//    private func extractText(from document: PDFDocument) throws -> String {
-//        var result = ""
-//        
-//        for pageNumber in 0..<document.pageCount {
-//            guard let page = document.page(at: pageNumber)?.pageRef else {
-//                throw ExtractError.couldNotOpenPage(number: pageNumber)
-//            }
-//            guard let pageAsImage = drawPDFPage(page: page)?.cgImage else {
-//                throw ExtractError.couldNotOpenPage(number: pageNumber)
-//            }
-//            
-//            if let string = try? imageExtractor.extract(from: pageAsImage) {
-//                result.append(string)
-//                result.append("\n")
-//            }
-//        }
-//        
-//        return result
-//    }
-    
-    private func drawPDFPage(page: CGPDFPage) -> UIImage? {
-        let pageRect = page.getBoxRect(.mediaBox)
-        let renderer = UIGraphicsImageRenderer(size: pageRect.size)
-        let img = renderer.image { ctx in
-            UIColor.white.set()
-            ctx.fill(pageRect)
+            var allPages: [Int: ExtractedPage] = [:]
+            var nextIndex = maxTasks
+            for try await (pageNumber, page) in group {
+                allPages[pageNumber] = page
+                
+                if nextIndex < renderedPages.count {
+                    let currentIndex = nextIndex
+                    let page = renderedPages[currentIndex]
+                    renderedPages.remove(at: currentIndex)
+                    group.addTask {
+                        let extractedPage = try await imageExtractor.extract(from: page)
+                        return (currentIndex, extractedPage)
+                    }
+                    nextIndex += 1
+                }
+            }
             
-            ctx.cgContext.translateBy(x: 0.0, y: pageRect.size.height)
-            ctx.cgContext.scaleBy(x: 1.0, y: -1.0)
-            
-            ctx.cgContext.drawPDFPage(page)
+            return (0..<allPages.count).compactMap { allPages[$0] }
         }
         
-        return img
+        return extractedPages
     }
-}
-
-enum ExtractError: Error {
-    case fileUnreadable
-    case fileEmpty
-    case couldNotOpenPage(number: Int)
+    
+    private func drawPDFPage(_ page: PDFPage) -> CGImage? {
+        autoreleasepool {
+            guard let pageRef = page.pageRef else { return nil }
+            let pageRect = pageRef.getBoxRect(.mediaBox)
+            let targetWidth: CGFloat = 1000
+            let scale = min(1, targetWidth / pageRect.width)
+            let renderSize = CGSize(
+                width: pageRect.width * scale,
+                height: pageRect.height * scale
+            )
+            
+            return page.thumbnail(of: renderSize, for: .mediaBox).cgImage
+        }
+    }
 }
