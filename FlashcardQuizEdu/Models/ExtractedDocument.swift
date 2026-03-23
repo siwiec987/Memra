@@ -10,15 +10,20 @@ import Foundation
 struct ExtractedDocument: Identifiable, Sendable {
     let id: UUID
     let sourceFileID: UUID
-    let rawText: String
-    let chunks: [String]
+    let pages: [ExtractedPage]
+    
+    var markdownText: String {
+        pages
+            .map(\.markdownText)
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n---\n\n")
+    }
 }
 
 extension ExtractedDocument {
-    init(sourceFileID: UUID, rawText: String, chunks: [String]) {
+    init(sourceFileID: UUID, pages: [ExtractedPage]) {
         self.id = UUID()
         self.sourceFileID = sourceFileID
-        self.rawText = rawText
-        self.chunks = []
+        self.pages = pages
     }
 }
