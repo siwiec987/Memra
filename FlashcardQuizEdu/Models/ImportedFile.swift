@@ -20,19 +20,16 @@ struct ImportedFile: Identifiable, Sendable {
         return ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file)
     }
     
-    init(url: URL) throws {
+    init(url: URL, fileSize: Int?, contentType: UTType) throws {
         self.id = UUID()
         self.url = url
         self.fileName = url.lastPathComponent
-        
-        guard let resourceValues = try? url.resourceValues(forKeys: [.contentTypeKey, .fileSizeKey]) else {
-            throw ImportError.accessDenied
+
+        guard contentType.conforms(to: .pdf) else {
+            throw ImportError.unsupportedContentType
         }
-        guard let contentType = resourceValues.contentType else {
-            throw ImportError.fileUnreadable
-        }
-        
-        self.fileSize = resourceValues.fileSize
+
+        self.fileSize = fileSize
         self.contentType = contentType
     }
 }

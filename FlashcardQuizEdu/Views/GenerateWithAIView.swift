@@ -30,9 +30,16 @@ struct GenerateWithAIView: View {
                     Label("Dodaj zdjęcia", systemImage: "photo")
                 }
             }
+            .onChange(of: selectedPhotos) { _, new in
+                guard !new.isEmpty else { return }
+                Task {
+                    await vm.handleSelectedPhotos(new)
+                    selectedPhotos.removeAll()
+                }
+            }
             
             Section {
-                ForEach(vm.importedFiles) { file in
+                ForEach(vm.importedDocuments) { file in
                     Label {
                         VStack(alignment: .leading) {
                             Text(file.fileName)
@@ -44,7 +51,34 @@ struct GenerateWithAIView: View {
                         Image(systemName: "document.fill")
                     }
                 }
-                .onDelete(perform: vm.deleteFiles)
+                .onDelete(perform: withAnimation { vm.deleteFiles })
+                
+                if !vm.importedImages.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            ForEach(vm.importedImages) { image in
+                                Image(decorative: image.thumbnail, scale: 1)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 96, height: 96)
+                                    .clipShape(.rect(corners: .concentric(minimum: 15), isUniform: true))
+                                    .overlay(alignment: .topTrailing) {
+                                        Button {
+                                            withAnimation {
+                                                vm.deleteImage(id: image.id)
+                                            }
+                                        } label: {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .symbolRenderingMode(.palette)
+                                                .foregroundStyle(.white, .black.opacity(0.5))
+                                        }
+                                    }
+                            }
+                        }
+                        .padding()
+                    }
+                    .listRowInsets(.init())
+                }
                 
                 ForEach(vm.failedFiles) { failed in
                     Label {
@@ -91,7 +125,7 @@ struct GenerateWithAIView: View {
         .fileImporter(
             isPresented: $showingImporter,
             allowedContentTypes: [
-                .pdf
+                .pdf, .image
             ],
             allowsMultipleSelection: true
         ) { result in
