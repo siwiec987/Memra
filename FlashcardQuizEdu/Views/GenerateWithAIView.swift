@@ -9,11 +9,15 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
+// TODO: MOŻNA FAILEDFILES ZNIKAĆ PO JAKIMŚ CZASIE
+
 struct GenerateWithAIView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var vm: GenerateWithAIViewModel
     @State private var showingImporter = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
+    
+    let columns = Array(repeating: GridItem(.flexible()), count: 3)
     
     init(viewModel: GenerateWithAIViewModel) {
         self.vm = viewModel
@@ -60,23 +64,21 @@ struct GenerateWithAIView: View {
                                 Image(decorative: image.thumbnail, scale: 1)
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(width: 96, height: 96)
                                     .clipShape(.rect(corners: .concentric(minimum: 15), isUniform: true))
                                     .overlay(alignment: .topTrailing) {
                                         Button {
-                                            withAnimation {
-                                                vm.deleteImage(id: image.id)
-                                            }
+                                            withAnimation { vm.deleteImage(id: image.id) }
                                         } label: {
                                             Image(systemName: "xmark.circle.fill")
-                                                .symbolRenderingMode(.palette)
                                                 .foregroundStyle(.white, .black.opacity(0.5))
                                         }
+                                        .buttonStyle(.plain)
                                     }
                             }
                         }
                         .padding()
                     }
+                    .frame(maxHeight: 150)
                     .listRowInsets(.init())
                 }
                 
