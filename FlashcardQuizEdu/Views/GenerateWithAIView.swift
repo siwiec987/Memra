@@ -9,13 +9,14 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
-// TODO: MOŻNA FAILEDFILES ZNIKAĆ PO JAKIMŚ CZASIE
-
 struct GenerateWithAIView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var vm: GenerateWithAIViewModel
     @State private var showingImporter = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
+    
+    @State private var failedFiles: [GenerateWithAIViewModel.FailedImport] = [] // couldn't animate without
+    let sectionSpacing: CGFloat = 15
     
     init(viewModel: GenerateWithAIViewModel) {
         self.vm = viewModel
@@ -32,50 +33,32 @@ struct GenerateWithAIView: View {
                     Label("Dodaj zdjęcia", systemImage: "photo")
                 }
                 
-                Button("Dodaj błąd", systemImage: "exclamationmark.circle.fill") {
-                    vm.addFailedFile()
-                }
-                .tint(.red)
-            }
-            .onChange(of: selectedPhotos) { _, new in
-                guard !new.isEmpty else { return }
-                Task {
-                    await vm.handleSelectedPhotos(new)
-                    selectedPhotos.removeAll()
+                Button("Dodaj błąd") {
+                    vm.addFailedFile(GenerateWithAIViewModel.FailedImport(fileName: "AASDASO:DAJSD:OAJSD:", error: ImportError.fileUnreadable))
                 }
             }
+            .onChange(of: selectedPhotos) { handleSelectedPhotos() }
             
-            Section {
-                ImportedDocumentsView(
-                    documents: vm.importedDocuments,
-                    onDelete: vm.deleteFiles
-                )
-            }
+            ImportedDocumentsSectionView(
+                documents: vm.importedDocuments,
+                onDelete: vm.deleteFiles
+            )
+            .listSectionSpacing(sectionSpacing)
             
-            Section {
-                if !vm.importedImages.isEmpty {
-                    ImportedImagesView(images: vm.importedImages) { id in
-                        vm.deleteImage(id: id)
-                    }
-                    .listRowInsets(.init())
-                }
+            ImportedImagesSectionView(images: vm.importedImages) { id in
+                vm.deleteImage(id: id)
             }
-            .listSectionSpacing(10)
+            .listSectionSpacing(sectionSpacing)
                 
-            Section {
-                ForEach(vm.failedFiles) { failed in
-                    Label {
-                        VStack(alignment: .leading) {
-                            Text(failed.fileName)
-                            Text(failed.error.localizedDescription)
-                                .font(.footnote)
-                                .foregroundStyle(.red)
-                        }
-                    } icon: {
-                        Image(systemName: "exclamationmark.circle.fill")
-                    }
+            FailedFilesSectionView(
+                files: failedFiles,
+                onDelete: vm.removeFailedFiles
+            )
+            .listSectionSpacing(sectionSpacing)
+            .onChange(of: vm.failedFiles) {
+                withAnimation {
+                    failedFiles = vm.failedFiles
                 }
-                .listItemTint(.red)
             }
             
             Section("ILOŚĆ FISZEK") {
@@ -121,6 +104,14 @@ struct GenerateWithAIView: View {
                 title: Text(error.localizedDescription),
                 message: Text(error.recoverySuggestion ?? "")
             )
+        }
+    }
+    
+    private func handleSelectedPhotos() {
+        guard !selectedPhotos.isEmpty else { return }
+        Task {
+            await vm.handleSelectedPhotos(selectedPhotos)
+            selectedPhotos.removeAll()
         }
     }
 }

@@ -16,6 +16,9 @@ class GenerateWithAIViewModel {
     private(set) var importedImages: [ImportedImage] = []
     private(set) var failedFiles: [FailedImport] = []
     
+    @ObservationIgnored
+    private var failedFilesRemovalTasks: [UUID: Task<Void, Never>] = [:]
+    
     var error: ImportError?
     
     var flashcardCount = 5.0
@@ -59,7 +62,7 @@ class GenerateWithAIViewModel {
                 importedImages.insert(newImage, at: 0)
             } catch {
                 let newFail = FailedImport(fileName: suggestedName, error: error)
-                failedFiles.append(newFail)
+                addFailedFile(newFail)
             }
         }
     }
@@ -123,17 +126,42 @@ class GenerateWithAIViewModel {
         return (contentType, resourceValues.fileSize)
     }
     
-    func addFailedFile() {
-        failedFiles.append(FailedImport(fileName: "Image: chwdpjp1000", error: ImportError.imageDecodingFailed))
+    private func addFailedFile(_ failed: FailedImport) {
+        failedFiles.append(failed)
+        scheduleFailedFileRemoval(for: failed.id)
     }
     
-    func removeFailedFile(id: UUID) {
+    private func scheduleFailedFileRemoval(for id: UUID) {
+        failedFilesRemovalTasks[id]?.cancel()
+        
+        let newTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+            
+            self?.removeFailedFile(id: id)
+        }
+        failedFilesRemovalTasks[id] = newTask
+    }
+    
+    private func removeFailedFile(id: UUID) {
+        failedFilesRemovalTasks[id]?.cancel()
+        failedFilesRemovalTasks.removeValue(forKey: id)
         failedFiles.removeAll { $0.id == id }
     }
     
-    struct FailedImport: Identifiable {
+    func removeFailedFiles(_ indexSet: IndexSet) {
+        indexSet.forEach { i in
+            removeFailedFile(id: failedFiles[i].id)
+        }
+    }
+    
+    struct FailedImport: Equatable, Identifiable {
         let id = UUID()
         let fileName: String
         let error: Error
+        
+        static func == (lhs: GenerateWithAIViewModel.FailedImport, rhs: GenerateWithAIViewModel.FailedImport) -> Bool {
+            lhs.id == rhs.id
+        }
     }
 }
