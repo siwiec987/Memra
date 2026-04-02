@@ -10,7 +10,7 @@ import ImageIO
 import Foundation
 import UniformTypeIdentifiers
 
-struct ImportedImage: Identifiable, Sendable {
+struct ImportedImage: Equatable, Identifiable, Sendable {
     let id: UUID
     let imageName: String
     let imageSize: Int?

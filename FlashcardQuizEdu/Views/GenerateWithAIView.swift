@@ -17,8 +17,6 @@ struct GenerateWithAIView: View {
     @State private var showingImporter = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
     
-    let columns = Array(repeating: GridItem(.flexible()), count: 3)
-    
     init(viewModel: GenerateWithAIViewModel) {
         self.vm = viewModel
     }
@@ -33,6 +31,11 @@ struct GenerateWithAIView: View {
                 PhotosPicker(selection: $selectedPhotos, matching: .images) {
                     Label("Dodaj zdjęcia", systemImage: "photo")
                 }
+                
+                Button("Dodaj błąd", systemImage: "exclamationmark.circle.fill") {
+                    vm.addFailedFile()
+                }
+                .tint(.red)
             }
             .onChange(of: selectedPhotos) { _, new in
                 guard !new.isEmpty else { return }
@@ -43,45 +46,23 @@ struct GenerateWithAIView: View {
             }
             
             Section {
-                ForEach(vm.importedDocuments) { file in
-                    Label {
-                        VStack(alignment: .leading) {
-                            Text(file.fileName)
-                            Text(file.fileSizeFormatted)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                    } icon: {
-                        Image(systemName: "document.fill")
-                    }
-                }
-                .onDelete(perform: withAnimation { vm.deleteFiles })
-                
+                ImportedDocumentsView(
+                    documents: vm.importedDocuments,
+                    onDelete: vm.deleteFiles
+                )
+            }
+            
+            Section {
                 if !vm.importedImages.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack {
-                            ForEach(vm.importedImages) { image in
-                                Image(decorative: image.thumbnail, scale: 1)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .clipShape(.rect(corners: .concentric(minimum: 15), isUniform: true))
-                                    .overlay(alignment: .topTrailing) {
-                                        Button {
-                                            withAnimation { vm.deleteImage(id: image.id) }
-                                        } label: {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .foregroundStyle(.white, .black.opacity(0.5))
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                            }
-                        }
-                        .padding()
+                    ImportedImagesView(images: vm.importedImages) { id in
+                        vm.deleteImage(id: id)
                     }
-                    .frame(maxHeight: 150)
                     .listRowInsets(.init())
                 }
+            }
+            .listSectionSpacing(10)
                 
+            Section {
                 ForEach(vm.failedFiles) { failed in
                     Label {
                         VStack(alignment: .leading) {

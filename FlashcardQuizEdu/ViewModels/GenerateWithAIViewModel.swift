@@ -16,7 +16,6 @@ class GenerateWithAIViewModel {
     private(set) var importedImages: [ImportedImage] = []
     private(set) var failedFiles: [FailedImport] = []
     
-    
     var error: ImportError?
     
     var flashcardCount = 5.0
@@ -42,6 +41,35 @@ class GenerateWithAIViewModel {
         case .failure( _):
             self.error = ImportError.accessDenied
         }
+    }
+    
+    func handleSelectedPhotos(_ photos: [PhotosPickerItem]) async {
+        for photo in photos {
+            let suggestedName = "Image: " + (photo.itemIdentifier ?? "\(Date())")
+            
+            do {
+                guard let contentType = photo.supportedContentTypes.first else {
+                    throw ImportError.imageDecodingFailed
+                }
+
+                let data = try await photo.loadTransferable(type: Data.self)
+                guard let data else { throw ImportError.imageDecodingFailed }
+                
+                let newImage = try ImportedImage(data: data, suggestedName: suggestedName, contentType: contentType)
+                importedImages.insert(newImage, at: 0)
+            } catch {
+                let newFail = FailedImport(fileName: suggestedName, error: error)
+                failedFiles.append(newFail)
+            }
+        }
+    }
+    
+    func deleteFiles(at offsets: IndexSet) {
+        importedDocuments.remove(atOffsets: offsets)
+    }
+    
+    func deleteImage(id: UUID) {
+        importedImages.removeAll { $0.id == id }
     }
     
     private func handleUrls(_ urls: [URL]) {
@@ -85,27 +113,6 @@ class GenerateWithAIViewModel {
         
         importedImages.insert(newImage, at: 0)
     }
-    
-    func handleSelectedPhotos(_ photos: [PhotosPickerItem]) async {
-        for photo in photos {
-            let suggestedName = "Image: " + (photo.itemIdentifier ?? "\(Date())")
-            
-            do {
-                guard let contentType = photo.supportedContentTypes.first else {
-                    throw ImportError.imageDecodingFailed
-                }
-
-                let data = try await photo.loadTransferable(type: Data.self)
-                guard let data else { throw ImportError.imageDecodingFailed }
-                
-                let newImage = try ImportedImage(data: data, suggestedName: suggestedName, contentType: contentType)
-                importedImages.insert(newImage, at: 0)
-            } catch {
-                let newFail = FailedImport(fileName: suggestedName, error: error)
-                failedFiles.append(newFail)
-            }
-        }
-    }
 
     private func resourceMetadata(for url: URL) throws -> (contentType: UTType, fileSize: Int?) {
         let resourceValues = try url.resourceValues(forKeys: [.contentTypeKey, .fileSizeKey])
@@ -116,12 +123,12 @@ class GenerateWithAIViewModel {
         return (contentType, resourceValues.fileSize)
     }
     
-    func deleteFiles(at offsets: IndexSet) {
-        importedDocuments.remove(atOffsets: offsets)
+    func addFailedFile() {
+        failedFiles.append(FailedImport(fileName: "Image: chwdpjp1000", error: ImportError.imageDecodingFailed))
     }
     
-    func deleteImage(id: UUID) {
-        importedImages.removeAll { $0.id == id }
+    func removeFailedFile(id: UUID) {
+        failedFiles.removeAll { $0.id == id }
     }
     
     struct FailedImport: Identifiable {

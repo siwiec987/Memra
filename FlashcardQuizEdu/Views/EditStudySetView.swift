@@ -103,10 +103,6 @@ struct EditStudySetView: View {
         .tint(.none)
         .interactiveDismissDisabled(vm.hasUnsavedChanges)
     }
-    
-    func addTag() {
-        
-    }
 }
 
 #Preview {
