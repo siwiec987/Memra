@@ -32,10 +32,6 @@ struct GenerateWithAIView: View {
                 PhotosPicker(selection: $selectedPhotos, matching: .images) {
                     Label("Dodaj zdjęcia", systemImage: "photo")
                 }
-                
-                Button("Dodaj błąd") {
-                    vm.addFailedFile(GenerateWithAIViewModel.FailedImport(fileName: "AASDASO:DAJSD:OAJSD:", error: ImportError.fileUnreadable))
-                }
             }
             .onChange(of: selectedPhotos) { handleSelectedPhotos() }
             
