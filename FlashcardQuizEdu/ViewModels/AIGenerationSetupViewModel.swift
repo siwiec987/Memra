@@ -1,5 +1,5 @@
 //
-//  GenerateWithAIViewModel.swift
+//  AIGenerationSetupViewModel.swift
 //  FlashcardQuizEdu
 //
 //  Created by Jakub Siwiec on 17/03/2026.
@@ -11,7 +11,7 @@ import _PhotosUI_SwiftUI
 
 @Observable
 @MainActor
-class GenerateWithAIViewModel {
+class AIGenerationSetupViewModel {
     private(set) var importedDocuments: [ImportedFile] = []
     private(set) var importedImages: [ImportedImage] = []
     private(set) var failedFiles: [FailedImport] = []
@@ -152,16 +152,6 @@ class GenerateWithAIViewModel {
     func removeFailedFiles(_ indexSet: IndexSet) {
         indexSet.forEach { i in
             removeFailedFile(id: failedFiles[i].id)
-        }
-    }
-    
-    struct FailedImport: Equatable, Identifiable {
-        let id = UUID()
-        let fileName: String
-        let error: Error
-        
-        static func == (lhs: GenerateWithAIViewModel.FailedImport, rhs: GenerateWithAIViewModel.FailedImport) -> Bool {
-            lhs.id == rhs.id
         }
     }
 }

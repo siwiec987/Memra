@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct FailedFilesSectionView: View {
-    let files: [GenerateWithAIViewModel.FailedImport]
+    let files: [FailedImport]
     let onDelete: (IndexSet) -> Void
     
     var body: some View {
