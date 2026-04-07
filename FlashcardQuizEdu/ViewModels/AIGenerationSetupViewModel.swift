@@ -83,6 +83,7 @@ class AIGenerationSetupViewModel {
 
                 let (contentType, fileSize) = try resourceMetadata(for: url)
 
+                let url = createTemporaryFile(from: url)
                 if contentType.conforms(to: .image) {
                     try handleImage(url, imageSize: fileSize, contentType: contentType)
                     return
@@ -102,7 +103,7 @@ class AIGenerationSetupViewModel {
                 throw ImportError.unsupportedContentType
             } catch {
                 let newFail = FailedImport(fileName: url.lastPathComponent, error: error)
-                failedFiles.append(newFail)
+                addFailedFile(newFail)
             }
         }
     }
@@ -124,6 +125,12 @@ class AIGenerationSetupViewModel {
         }
 
         return (contentType, resourceValues.fileSize)
+    }
+    
+    private func createTemporaryFile(from url: URL) -> URL {
+        let tempURL = FileManager.default.temporaryDirectory.appending(component: url.lastPathComponent)
+        try? FileManager.default.copyItem(at: url, to: tempURL)
+        return tempURL
     }
     
     private func addFailedFile(_ failed: FailedImport) {
