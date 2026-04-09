@@ -12,11 +12,22 @@ struct ExtractedDocument: Identifiable, Sendable {
     let sourceFileID: UUID
     let pages: [ExtractedPage]
     
+    var pageCount: Int {
+        pages.count
+    }
+    
     var markdownText: String {
         pages
             .map(\.markdownText)
             .filter { !$0.isEmpty }
-            .joined(separator: "\n\n---\n\n")
+            .joined(separator: "\n\n")
+    }
+    
+    func markdownText(pageLimit: Int, offset: Int = 0) -> String {
+        pages.dropFirst(offset).prefix(pageLimit)
+            .map(\.markdownText)
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
     }
 }
 
