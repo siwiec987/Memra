@@ -8,7 +8,6 @@
 import Foundation
 import FoundationModels
 
-//@Generable
 struct ExtractedPage: Sendable {
     let title: String?
     let sections: [PageSection]
@@ -37,4 +36,9 @@ struct ExtractedPage: Sendable {
     }
 }
 
-
+extension ExtractedPage {
+    init(sections: [PageSection]) {
+        self.title = nil
+        self.sections = sections
+    }
+}

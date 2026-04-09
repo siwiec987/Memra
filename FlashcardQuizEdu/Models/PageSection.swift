@@ -5,7 +5,6 @@
 //  Created by Jakub Siwiec on 23/03/2026.
 //
 
-
 import Foundation
 
 enum PageSection: Sendable {

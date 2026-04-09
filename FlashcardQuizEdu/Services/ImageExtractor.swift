@@ -23,9 +23,8 @@ struct ImageExtractor {
             throw ExtractError.fileEmpty
         }
 
-        let title = normalized(document.title?.transcript)
         let sections = extractSections(from: document)
-        return ExtractedPage(title: title,sections: sections)
+        return ExtractedPage(sections: sections)
     }
 
     private func extractSections(from document: DocumentObservation.Container) -> [PageSection] {
@@ -34,15 +33,15 @@ struct ImageExtractor {
         let paragraph = normalized(document.text.transcript)
         sections.append(.paragraph(paragraph))
 
-        for list in document.lists {
-            let items = list.items.compactMap { item in
-                let text = normalized(item.itemString)
-                return text.isEmpty ? nil : text
-            }
-
-            guard !items.isEmpty else { continue }
-            sections.append(.list(items))
-        }
+//        for list in document.lists {
+//            let items = list.items.compactMap { item in
+//                let text = normalized(item.itemString)
+//                return text.isEmpty ? nil : text
+//            }
+//
+//            guard !items.isEmpty else { continue }
+//            sections.append(.list(items))
+//        }
 
         for table in document.tables {
             let rows = table.rows
