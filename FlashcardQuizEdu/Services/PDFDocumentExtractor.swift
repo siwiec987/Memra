@@ -74,7 +74,7 @@ struct PDFDocumentExtractor: DocumentExtractor {
         autoreleasepool {
             guard let pageRef = page.pageRef else { return nil }
             let pageRect = pageRef.getBoxRect(.mediaBox)
-            let targetWidth: CGFloat = 1000
+            let targetWidth: CGFloat = 1800
             let scale = min(1, targetWidth / pageRect.width)
             let renderSize = CGSize(
                 width: pageRect.width * scale,

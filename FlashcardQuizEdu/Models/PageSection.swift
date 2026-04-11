@@ -15,7 +15,7 @@ enum PageSection: Sendable {
     var markdownText: String {
         switch self {
         case .paragraph(let text):
-            return "PARAGRAPH:\n" + text
+            return text
 
         case .list(let items):
             return "LIST:\n" + items

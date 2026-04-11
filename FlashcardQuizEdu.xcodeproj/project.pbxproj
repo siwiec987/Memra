@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2DA6F4112F8AB06200020F61 /* FlashcardGenerationConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DA6F4102F8AB06200020F61 /* FlashcardGenerationConfiguration.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		2D4E5EA42EEB745500F01A5C /* FlashcardQuizEdu.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlashcardQuizEdu.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2DA6F4102F8AB06200020F61 /* FlashcardGenerationConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FlashcardGenerationConfiguration.swift; path = FlashcardQuizEdu/Models/FlashcardGenerationConfiguration.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +37,7 @@
 		2D4E5E9B2EEB745500F01A5C = {
 			isa = PBXGroup;
 			children = (
+				2DA6F4102F8AB06200020F61 /* FlashcardGenerationConfiguration.swift */,
 				2D4E5EA62EEB745500F01A5C /* FlashcardQuizEdu */,
 				2D4E5EA52EEB745500F01A5C /* Products */,
 			);
@@ -119,6 +125,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2DA6F4112F8AB06200020F61 /* FlashcardGenerationConfiguration.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

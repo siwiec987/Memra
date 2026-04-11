@@ -18,45 +18,41 @@ struct AIGenerationProgressView: View {
         switch vm.state {
         case .extracting: 1.0
         case .generating: 2.0
-        case .result(_): 3.0
-        case .error(_): 0.0
-        }
-    }
-    
-    var progressLabel: String {
-        switch vm.state {
-        case .extracting:
-            "Extracting..."
-        case .generating:
-            "Generating..."
-        case .result(_):
-            "Complete!"
-        case .error(let error):
-            "There was an error: \(error.localizedDescription)"
+        case .success(_): 3.0
+        default: 0.0
         }
     }
     
     var body: some View {
         Group {
             switch vm.state {
-            case .extracting:
+            case .idle:
+                ProgressView {
+                    Text("Starting...")
+                }
+                .padding()
+            case .extracting(let name):
                 ProgressView(value: progressValue, total: 3) {
-                    Text(progressLabel)
+                    Text("Extracting \(name)...")
                 }
                 .padding()
             case .generating:
                 ProgressView(value: progressValue, total: 3) {
-                    Text(progressLabel)
+                    Text("Generating...")
                 }
                 .padding()
-            case .result(let flashcards):
-                List(flashcards, id: \.question) { card in
-                    VStack {
-                        Text(card.question)
-                        Text(card.answer)
+            case .success(let flashcards):
+                if flashcards.isEmpty {
+                    Text("NO RESULTS :(:(:(:(:(:(:(:(")
+                } else {
+                    List(flashcards, id: \.question) { card in
+                        VStack {
+                            Text(card.question)
+                            Text(card.answer)
+                        }
                     }
                 }
-            case .error(let error):
+            case .failed(let error):
                 Text("There was an error: \(error.localizedDescription)")
                     .foregroundStyle(.red)
                     .padding()
@@ -69,5 +65,19 @@ struct AIGenerationProgressView: View {
 }
 
 #Preview {
-    AIGenerationProgressView(viewModel: AIGenerationProgressViewModel(importedDocuments: [], importedImages: [], pdfExtractor: PDFDocumentExtractor(), imageExtractor: ImageExtractor()))
+    let configuration = FlashcardGenerationConfiguration.default
+    let chunker = DocumentChunker(configuration: configuration)
+
+    AIGenerationProgressView(
+        viewModel: AIGenerationProgressViewModel(
+            importedDocuments: [],
+            importedImages: [],
+            pdfExtractor: PDFDocumentExtractor(),
+            imageExtractor: ImageExtractor(),
+            flashcardGenerator: FlashcardGenerator(
+                configuration: configuration,
+                chunker: chunker
+            )
+        )
+    )
 }

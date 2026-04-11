@@ -148,12 +148,15 @@ struct AIGenerationSetupView: View {
             ToolbarItem(placement: .bottomBar) {
                 NavigationLink {
                     let imageExtractor = ImageExtractor()
+                    let config = FlashcardGenerationConfiguration.default
+                    let chunker = DocumentChunker(configuration: config)
                     AIGenerationProgressView(
                         viewModel: AIGenerationProgressViewModel(
                             importedDocuments: vm.importedDocuments,
                             importedImages: vm.importedImages,
                             pdfExtractor: PDFDocumentExtractor(imageExtractor: imageExtractor),
-                            imageExtractor: imageExtractor
+                            imageExtractor: imageExtractor,
+                            flashcardGenerator: FlashcardGenerator(configuration: config, chunker: chunker)
                         )
                     )
                     .navigationBarBackButtonHidden()
