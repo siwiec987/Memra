@@ -15,4 +15,9 @@ struct GeneratedFlashcard {
 
     @Guide(description: "A concise factual answer supported directly by the provided source text.")
     let answer: String
+    
+    init(question: String, answer: String) {
+        self.question = question.trimmed()
+        self.answer = answer.trimmed()
+    }
 }

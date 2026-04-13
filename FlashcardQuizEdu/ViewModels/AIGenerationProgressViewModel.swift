@@ -18,6 +18,8 @@ final class AIGenerationProgressViewModel {
     @ObservationIgnored private let imageExtractor: ImageExtractor
     @ObservationIgnored private let flashcardGenerator: FlashcardGenerator
     
+    private(set) var generatedFlashcards: [GeneratedFlashcard] = []
+    
     init(importedDocuments: [ImportedFile], importedImages: [ImportedImage], pdfExtractor: PDFDocumentExtractor, imageExtractor: ImageExtractor, flashcardGenerator: FlashcardGenerator) {
         self.importedDocuments = importedDocuments
         self.importedImages = importedImages
@@ -50,42 +52,44 @@ final class AIGenerationProgressViewModel {
             extractedDocuments.append(extractedDocument)
         }
         
-        extractedDocuments.forEach { doc in
-            print("document:", doc.markdownText)
-        }
-        
         return extractedDocuments
     }
     
     func generate(from documents: [ExtractedDocument]) async throws {
         state = .generating
-        var flashcards = [GeneratedFlashcard]()
+        
         for document in documents {
             let response = try await flashcardGenerator.generate(for: document)
-            flashcards.append(contentsOf: response)
+            generatedFlashcards.append(contentsOf: response)
         }
 
-        state = .success(flashcards)
+        state = .completed
     }
     
-    enum ProgressState {
+    enum ProgressState: Equatable, Identifiable {
         case idle
         case extracting(String)
         case generating
-        case success([GeneratedFlashcard])
+        case completed
         case failed(Error)
         
-//        var id: String {
-//            switch self {
-//            case .extracting(let name): "extracting \(name)"
-//            case .generating: "generating"
-//            case .success(let flashcards): "result \(flashcards.map { $0.answer.prefix(10) })"
-//            case .failed(let error): "error: \(error)"
-//            }
-//        }
-//
-//        static func == (lhs: Self, rhs: Self) -> Bool {
-//            lhs.id == rhs.id
-//        }
+        var id: String {
+            switch self {
+            case .idle:
+                "idle"
+            case .extracting(let name):
+                "extracting \(name)"
+            case .generating:
+                "generating"
+            case .completed:
+                "completed"
+            case .failed(let error):
+                "failed \(error)"
+            }
+        }
+        
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.id == rhs.id
+        }
     }
 }
