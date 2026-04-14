@@ -11,6 +11,7 @@ import FoundationModels
 struct FlashcardGenerationConfiguration {
     static let `default` = Self.init(
         tokenLimit: Int(Double(SystemLanguageModel.default.contextSize) * 0.7),
+        sentenceOverlapCount: 2,
         instructions: Instructions("You are an expert at creating high-quality study flashcards."),
         prompt: """
         Your task is to generate flashcards based ONLY on the provided text.
@@ -37,6 +38,7 @@ struct FlashcardGenerationConfiguration {
     )
     
     let tokenLimit: Int
+    let sentenceOverlapCount: Int
     let instructions: Instructions
     let prompt: String
 }
