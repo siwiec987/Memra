@@ -28,7 +28,8 @@ struct EditStudySetButtonSheetView: View {
             NavigationStack {
                 switch dest {
                 case .ai:
-                    AIGenerationSetupView(viewModel: AIGenerationSetupViewModel())
+//                    AIGenerationSetupView(viewModel: AIGenerationSetupViewModel())
+                    AIGenerationContainerView()
                         .navigationBarTitleDisplayMode(.inline)
                 case .hand:
                     EditStudySetView(viewModel: EditStudySetViewModel(creatingIn: category?.objectID))

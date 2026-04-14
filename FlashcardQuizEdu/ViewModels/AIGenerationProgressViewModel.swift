@@ -10,7 +10,7 @@ import Foundation
 @MainActor
 @Observable
 final class AIGenerationProgressViewModel {
-    private(set) var state: ProgressState = .idle
+    private(set) var state: ProgressState = .starting
     
     @ObservationIgnored private let importedDocuments: [ImportedFile]
     @ObservationIgnored private let importedImages: [ImportedImage]
@@ -29,6 +29,9 @@ final class AIGenerationProgressViewModel {
     }
     
     func perform() async {
+        generatedFlashcards = []
+        state = .starting
+        
         do {
             let extracted = try await extract()
             try await generate(from: extracted)
@@ -67,7 +70,7 @@ final class AIGenerationProgressViewModel {
     }
     
     enum ProgressState: Equatable, Identifiable {
-        case idle
+        case starting
         case extracting(String)
         case generating
         case completed
@@ -75,8 +78,8 @@ final class AIGenerationProgressViewModel {
         
         var id: String {
             switch self {
-            case .idle:
-                "idle"
+            case .starting:
+                "starting"
             case .extracting(let name):
                 "extracting \(name)"
             case .generating:

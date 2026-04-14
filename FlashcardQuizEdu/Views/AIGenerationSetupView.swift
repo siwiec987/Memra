@@ -12,6 +12,8 @@ import UniformTypeIdentifiers
 struct AIGenerationSetupView: View {
     @Environment(\.dismiss) private var dismiss
     
+    let onGenerate: ([ImportedFile], [ImportedImage]) -> Void
+    
     @State private var vm: AIGenerationSetupViewModel
     @State private var showingImporter = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
@@ -38,8 +40,9 @@ struct AIGenerationSetupView: View {
         return "Wybierz co chcesz wygenerować."
     }
     
-    init(viewModel: AIGenerationSetupViewModel) {
+    init(viewModel: AIGenerationSetupViewModel, onGenerate: @escaping ([ImportedFile], [ImportedImage]) -> Void) {
         self.vm = viewModel
+        self.onGenerate = onGenerate
     }
     
     var body: some View {
@@ -146,26 +149,14 @@ struct AIGenerationSetupView: View {
             }
             
             ToolbarItem(placement: .bottomBar) {
-                NavigationLink {
-                    let imageExtractor = ImageExtractor()
-                    let config = FlashcardGenerationConfiguration.default
-                    let chunker = DocumentChunker(configuration: config)
-                    AIGenerationProgressView(
-                        viewModel: AIGenerationProgressViewModel(
-                            importedDocuments: vm.importedDocuments,
-                            importedImages: vm.importedImages,
-                            pdfExtractor: PDFDocumentExtractor(imageExtractor: imageExtractor),
-                            imageExtractor: imageExtractor,
-                            flashcardGenerator: FlashcardGenerator(configuration: config, chunker: chunker)
-                        )
-                    )
-                    .navigationBarBackButtonHidden()
+                Button {
+                    onGenerate(vm.importedDocuments, vm.importedImages)
                 } label: {
                     HStack {
                         Image(systemName: "sparkles.2")
                         Text("Generuj")
                     }
-                    .padding()
+                    .padding(.horizontal)
                 }
                 .buttonStyle(.glassProminent)
                 .font(.title3)
@@ -205,7 +196,8 @@ struct AIGenerationSetupView: View {
 #Preview {
     NavigationStack {
         AIGenerationSetupView(
-            viewModel: AIGenerationSetupViewModel()
+            viewModel: AIGenerationSetupViewModel(),
+            onGenerate: { _,_ in}
         )
     }
 }

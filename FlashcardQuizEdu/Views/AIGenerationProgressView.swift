@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct AIGenerationProgressView: View {
-    @State private var vm: AIGenerationProgressViewModel
+    private let vm: AIGenerationProgressViewModel
     @State private var points: [SIMD2<Float>] = Self.randomPoints()
     @State private var progressLabel = ""
     @State private var tryAgainButtonScale: CGFloat = 0
@@ -24,7 +24,6 @@ struct AIGenerationProgressView: View {
         Color(red: 0.0, green: 0.278, blue: 0.671), Color(red: 0.102, green: 0.062, blue: 0.376), Color(red: 0.094, green: 0.125, blue: 0.361),
     ]}
     
-    
     var body: some View {
         ZStack {
             MeshGradient(
@@ -34,9 +33,7 @@ struct AIGenerationProgressView: View {
                 colors: colors
             )
             .ignoresSafeArea()
-            .onAppear {
-                animateToNextState()
-            }
+            .onAppear(perform: animateToNextState)
             
             VStack {
                 Spacer()
@@ -60,16 +57,14 @@ struct AIGenerationProgressView: View {
             }
             .onChange(of: vm.state, handleProgressStateChange)
         }
-        .task {
-            await vm.perform()
-        }
+        .task(vm.perform)
         .onDisappear { shouldAnimate = false }
     }
     
     private func handleProgressStateChange() {
         withAnimation(.bouncy) {
             progressLabel = switch vm.state {
-            case .idle: "Starting..."
+            case .starting: "Starting..."
             case .extracting(let name): "Extracting \(name)..."
             case .generating: "Generating..."
             case .completed where vm.generatedFlashcards.isEmpty: "No results"
