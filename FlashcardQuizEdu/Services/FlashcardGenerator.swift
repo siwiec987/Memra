@@ -13,9 +13,9 @@ struct FlashcardGenerator {
     private let chunker: DocumentChunker
     private let maxSplitDepth: Int
     
-    init(configuration: FlashcardGenerationConfiguration, chunker: DocumentChunker, maxSplitDepth: Int = 6) {
+    init(configuration: FlashcardGenerationConfiguration, maxSplitDepth: Int = 6) {
         self.configuration = configuration
-        self.chunker = chunker
+        self.chunker = DocumentChunker(configuration: configuration)
         self.maxSplitDepth = maxSplitDepth
     }
     

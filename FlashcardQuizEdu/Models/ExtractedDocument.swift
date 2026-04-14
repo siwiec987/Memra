@@ -21,6 +21,7 @@ struct ExtractedDocument: Identifiable, Sendable {
             .map(\.markdownText)
             .filter { !$0.isEmpty }
             .joined(separator: "\n\n")
+            .trimmed()
     }
     
     func markdownText(pageLimit: Int, offset: Int = 0) -> String {

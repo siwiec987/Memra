@@ -54,8 +54,6 @@ struct AIGenerationContainerView: View {
     
     private func createProgressVM(documents: [ImportedFile], images: [ImportedImage]) {
         let imageExtractor = ImageExtractor()
-        let config = FlashcardGenerationConfiguration.default
-        let chunker = DocumentChunker(configuration: config)
         withAnimation {
             generatedFlashcards = nil
             progressVM = AIGenerationProgressViewModel(
@@ -63,7 +61,7 @@ struct AIGenerationContainerView: View {
                 importedImages: images,
                 pdfExtractor: PDFDocumentExtractor(imageExtractor: imageExtractor),
                 imageExtractor: imageExtractor,
-                flashcardGenerator: FlashcardGenerator(configuration: config, chunker: chunker)
+                flashcardGenerator: FlashcardGenerator(configuration: .default)
             )
             
             phase = .generating

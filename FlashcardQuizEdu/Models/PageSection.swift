@@ -18,14 +18,14 @@ enum PageSection: Sendable {
             return text
 
         case .list(let items):
-            return "LIST:\n" + items
+            return "LIST:{\n" + items
                 .map { "- \($0)" }
-                .joined(separator: "\n")
+                .joined(separator: "\n") + "}"
 
         case .table(let rows):
-            return "TABLE:\n" + rows
+            return "TABLE:{\n" + rows
                 .map { $0.joined(separator: " | ") }
-                .joined(separator: "\n")
+                .joined(separator: "\n") + "}"
         }
     }
 

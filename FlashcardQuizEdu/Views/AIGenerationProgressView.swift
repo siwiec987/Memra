@@ -113,8 +113,7 @@ struct AIGenerationProgressView: View {
             pdfExtractor: PDFDocumentExtractor(),
             imageExtractor: ImageExtractor(),
             flashcardGenerator: FlashcardGenerator(
-                configuration: configuration,
-                chunker: chunker
+                configuration: configuration
             )
         )
     )
