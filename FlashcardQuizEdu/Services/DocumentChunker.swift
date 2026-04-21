@@ -9,11 +9,19 @@ import Foundation
 import FoundationModels
 
 struct DocumentChunker {
-    private let configuration: FlashcardGenerationConfiguration
-    private let chunkSeparator = "\n"
+//    private let configuration: StudySetGenerationConfiguration
+    private let sentenceOverlapCount: Int
+    private let tokenLimit: Int
+    private let prompt: String
+    private let instructions: String
+    private let chunkSeparator: String
     
-    init(configuration: FlashcardGenerationConfiguration) {
-        self.configuration = configuration
+    init(configuration: StudySetGenerationConfiguration, chunkSeparator: String = "\n") {
+        self.sentenceOverlapCount = configuration.sentenceOverlapCount
+        self.tokenLimit = configuration.tokenLimit
+        self.instructions = (configuration.flashcardInstructions.count > configuration.quizPrompt.count) ? configuration.flashcardInstructions : configuration.quizInstructions
+        self.prompt = (configuration.flashcardPrompt.count > configuration.quizPrompt.count) ? configuration.flashcardPrompt : configuration.quizPrompt
+        self.chunkSeparator = chunkSeparator
     }
 
     func chunks(for document: ExtractedDocument) async throws -> [String] {
@@ -72,7 +80,7 @@ struct DocumentChunker {
     }
 
     private func nextStartIndex(after endIndex: Int, currentStartIndex: Int) -> Int {
-        let overlapCount = max(configuration.sentenceOverlapCount, 0)
+        let overlapCount = max(sentenceOverlapCount, 0)
         let overlappedStartIndex = max(endIndex - overlapCount, currentStartIndex + 1)
         return min(overlappedStartIndex, endIndex)
     }
@@ -131,13 +139,13 @@ struct DocumentChunker {
 
     private func fits(_ chunk: String) async -> Bool {
         guard let tokenCount = await tokenCount(for: chunk) else { return false }
-        return tokenCount < configuration.tokenLimit
+        return tokenCount < tokenLimit
     }
 
     private func tokenCount(for chunk: String) async -> Int? {
         let model = SystemLanguageModel.default
-        guard let chunkTokens = try? await model.tokenCount(for: configuration.prompt.appending(chunk)) else { return nil }
-        guard let instructionsTokens = try? await model.tokenCount(for: configuration.instructions) else { return nil }
+        guard let chunkTokens = try? await model.tokenCount(for: prompt.appending(chunk)) else { return nil }
+        guard let instructionsTokens = try? await model.tokenCount(for: instructions) else { return nil }
 
         return chunkTokens + instructionsTokens
     }
