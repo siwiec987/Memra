@@ -9,18 +9,17 @@ import Foundation
 import FoundationModels
 
 struct DocumentChunker {
-//    private let configuration: StudySetGenerationConfiguration
     private let sentenceOverlapCount: Int
     private let tokenLimit: Int
     private let prompt: String
     private let instructions: String
     private let chunkSeparator: String
     
-    init(configuration: StudySetGenerationConfiguration, chunkSeparator: String = "\n") {
-        self.sentenceOverlapCount = configuration.sentenceOverlapCount
-        self.tokenLimit = configuration.tokenLimit
-        self.instructions = (configuration.flashcardInstructions.count > configuration.quizPrompt.count) ? configuration.flashcardInstructions : configuration.quizInstructions
-        self.prompt = (configuration.flashcardPrompt.count > configuration.quizPrompt.count) ? configuration.flashcardPrompt : configuration.quizPrompt
+    init(tokenLimit: Int, sentenceOverlapCount: Int, instructions: String, prompt: String, chunkSeparator: String = "\n") {
+        self.tokenLimit = tokenLimit
+        self.sentenceOverlapCount = sentenceOverlapCount
+        self.instructions = instructions
+        self.prompt = prompt
         self.chunkSeparator = chunkSeparator
     }
 

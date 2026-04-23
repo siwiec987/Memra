@@ -67,14 +67,14 @@ struct AIGenerationProgressView: View {
             case .starting: "Starting..."
             case .extracting(let name): "Extracting \(name)..."
             case .generating: "Generating..."
-            case .completed where vm.generatedFlashcards.isEmpty: "No results"
+            case .completed where vm.isGeneratedStudySetEmpty: "No results"
             case .completed: ""
             case .failed(let error):
                 "There was an error: \(error.localizedDescription)"
             }
             
             tryAgainButtonScale = switch vm.state {
-            case .completed where vm.generatedFlashcards.isEmpty: 1
+            case .completed where vm.isGeneratedStudySetEmpty: 1
             case .failed: 1
             default: 0
             }
@@ -103,17 +103,15 @@ struct AIGenerationProgressView: View {
 }
 
 #Preview {
-    let configuration = FlashcardGenerationConfiguration.default
-    let chunker = DocumentChunker(configuration: configuration)
-
     AIGenerationProgressView(
         viewModel: AIGenerationProgressViewModel(
             importedDocuments: [],
             importedImages: [],
             pdfExtractor: PDFDocumentExtractor(),
             imageExtractor: ImageExtractor(),
-            flashcardGenerator: FlashcardGenerator(
-                configuration: configuration
+            studySetGenerator: StudySetGenerator(
+                generateFlashcards: true,
+                quizConfiguration: nil
             )
         )
     )

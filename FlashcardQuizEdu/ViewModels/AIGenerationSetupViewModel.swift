@@ -32,9 +32,37 @@ class AIGenerationSetupViewModel {
         Int(questionCount.rounded())
     }
     
+    var generateFlashcards = false
+    var generateQuiz = false
+    var quizAnswersPerQuestion = 4.0
+    var quizAllowsMultipleAnswers = false
+    
+    var contentDescription: String {
+        if generateFlashcards && !generateQuiz {
+            return "Dla tego zestawu zostaną wygenerowane tylko fiszki."
+        }
+        if generateQuiz && !generateFlashcards {
+            return "Dla tego zestawu zostanie wygenerowany tylko quiz."
+        }
+        if generateQuiz && generateFlashcards {
+            return "Dla tego zestawu zostaną wygenerowane fiszki oraz quiz."
+        }
+        
+        return "Wybierz co chcesz wygenerować."
+    }
+    
     var isGenerationDisabled: Bool {
         (importedDocuments.isEmpty && importedImages.isEmpty) ||
-        (flashcardCountRounded == 0 && questionCountRounded == 0)
+//        (flashcardCountRounded == 0 && questionCountRounded == 0) ||
+        ( !generateFlashcards && !generateQuiz)
+    }
+    
+    var quizConfiguration: StudySetGenerator.QuizConfiguration? {
+        guard generateQuiz else { return nil }
+        return .init(
+            answersPerQuestion: Int(quizAnswersPerQuestion),
+            allowsMultipleCorrectAnswers: quizAllowsMultipleAnswers
+        )
     }
     
     func handleFileImport(_ result: Result<[URL], any Error>) {

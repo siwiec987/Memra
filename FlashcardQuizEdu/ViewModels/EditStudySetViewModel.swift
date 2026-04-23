@@ -46,13 +46,27 @@ class EditStudySetViewModel: Identifiable {
     
     init(
         persistence: PersistenceController = PersistenceController.instance,
-        creatingIn categoryID: NSManagedObjectID?
+        creatingIn categoryID: NSManagedObjectID?,
+        from generatedStudySet: GeneratedStudySet? = nil
     ) {
         self.persistence = persistence
         self.editContext = persistence.newChildContext()
         self.isEditing = false
         
         self.selectedStudySet = StudySetEntity(context: editContext)
+        
+        if let generatedStudySet {
+            let flashcards = generatedStudySet.flashcards.map {
+                let flashcard = FlashcardEntity(context: editContext)
+                flashcard.question = $0.question
+                flashcard.answer = $0.answer
+                return flashcard
+            }
+            
+            selectedStudySet.name = generatedStudySet.name
+            selectedStudySet.flashcards = NSSet(array: flashcards)
+            // TODO: TRZEBA DODAĆ QUIZ DO STUDYSETENTITY MORDKOOOOOOOOO
+        }
         
         bootstrapState(defaultCategoryID: categoryID)
     }

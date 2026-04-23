@@ -10,7 +10,7 @@ import SwiftUI
 struct AIGenerationContainerView: View {
     @State private var phase: FlowPhase = .setup
     @State private var progressVM: AIGenerationProgressViewModel?
-    @State private var generatedFlashcards: [GeneratedFlashcard]?
+    @State private var generatedStudySet: GeneratedStudySet?
     
     var body: some View {
         ZStack {
@@ -21,13 +21,13 @@ struct AIGenerationContainerView: View {
                 )
             }
             
-            if let generatedFlashcards, phase == .done {
-                List(generatedFlashcards, id: \.self) { card in
-                    VStack {
-                        Text(card.question)
-                        Text(card.answer)
-                    }
-                }
+            if let generatedStudySet, phase == .done {
+                EditStudySetView(
+                    viewModel: EditStudySetViewModel(
+                        creatingIn: nil,
+                        from: generatedStudySet
+                    )
+                )
                 .toolbarVisibility(.hidden, for: .bottomBar)
             }
             
@@ -35,7 +35,6 @@ struct AIGenerationContainerView: View {
                 AIGenerationProgressView(viewModel: progressVM)
                 .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .scale))
                 .toolbarVisibility(.hidden, for: .bottomBar)
-                // zwraca wygenerowane rzeczy, później wołamy EditStudySet z uzupełnionymi danymi
             }
             
             
@@ -44,24 +43,24 @@ struct AIGenerationContainerView: View {
     }
     
     private func handleProgressStateChange() {
-        guard let progressVMUnwrapped = progressVM, progressVMUnwrapped.state == .completed && !progressVMUnwrapped.generatedFlashcards.isEmpty else { return }
+        guard let progressVMUnwrapped = progressVM, progressVMUnwrapped.state == .completed else { return }
             withAnimation {
-                generatedFlashcards = progressVMUnwrapped.generatedFlashcards
+                generatedStudySet = progressVMUnwrapped.generatedStudySet
                 phase = .done
                 progressVM = nil
             }
     }
     
-    private func createProgressVM(documents: [ImportedFile], images: [ImportedImage]) {
+    private func createProgressVM(documents: [ImportedFile], images: [ImportedImage], generateFlashcards: Bool, quizConfiguration: StudySetGenerator.QuizConfiguration?) {
         let imageExtractor = ImageExtractor()
         withAnimation {
-            generatedFlashcards = nil
+            generatedStudySet = nil
             progressVM = AIGenerationProgressViewModel(
                 importedDocuments: documents,
                 importedImages: images,
                 pdfExtractor: PDFDocumentExtractor(imageExtractor: imageExtractor),
                 imageExtractor: imageExtractor,
-                flashcardGenerator: FlashcardGenerator(configuration: .default)
+                studySetGenerator: StudySetGenerator(generateFlashcards: generateFlashcards, quizConfiguration: quizConfiguration)
             )
             
             phase = .generating

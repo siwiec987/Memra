@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 struct AIGenerationSetupView: View {
     @Environment(\.dismiss) private var dismiss
     
-    let onGenerate: ([ImportedFile], [ImportedImage]) -> Void
+    let onGenerate: ([ImportedFile], [ImportedImage], Bool, StudySetGenerator.QuizConfiguration?) -> Void
     
     @State private var vm: AIGenerationSetupViewModel
     @State private var showingImporter = false
@@ -21,26 +21,14 @@ struct AIGenerationSetupView: View {
     @State private var failedFiles: [FailedImport] = [] // couldn't animate without
     let sectionSpacing: CGFloat = 15
     
-    @State private var picker = "B"
+//    @State private var picker = "B"
     @State private var selectedLanguage = "en"
-    @State private var generateFlashcards = true
-    @State private var generateQuiz = false
+//    @State private var generateFlashcards = true
+//    @State private var generateQuiz = false
+//    @State private var quizQuestionAnswerCount = 4.0
+//    @State private var quizAllowsMultipleAnswers = false
     
-    var contentDescription: String {
-        if generateFlashcards && !generateQuiz {
-            return "Dla tego zestawu zostaną wygenerowane tylko fiszki."
-        }
-        if generateQuiz && !generateFlashcards {
-            return "Dla tego zestawu zostanie wygenerowany tylko quiz."
-        }
-        if generateQuiz && generateFlashcards {
-            return "Dla tego zestawu zostaną wygenerowane fiszki oraz quiz."
-        }
-        
-        return "Wybierz co chcesz wygenerować."
-    }
-    
-    init(viewModel: AIGenerationSetupViewModel, onGenerate: @escaping ([ImportedFile], [ImportedImage]) -> Void) {
+    init(viewModel: AIGenerationSetupViewModel, onGenerate: @escaping ([ImportedFile], [ImportedImage], Bool, StudySetGenerator.QuizConfiguration?) -> Void) {
         self.vm = viewModel
         self.onGenerate = onGenerate
     }
@@ -82,9 +70,9 @@ struct AIGenerationSetupView: View {
             
             Section {
                 HStack {
-                    Button { generateFlashcards.toggle() } label: {
+                    Button { vm.generateFlashcards.toggle() } label: {
                         ConcentricRectangle()
-                            .fill(generateFlashcards ? .primary : .secondary)
+                            .fill(vm.generateFlashcards ? .primary : .secondary)
                             .overlay {
                                 Text("Fiszki")
                                     .font(.title3).bold()
@@ -92,9 +80,9 @@ struct AIGenerationSetupView: View {
                             }
                     }
 
-                    Button { generateQuiz.toggle() } label: {
+                    Button { vm.generateQuiz.toggle() } label: {
                         ConcentricRectangle()
-                            .fill(generateQuiz ? .primary : .secondary)
+                            .fill(vm.generateQuiz ? .primary : .secondary)
                             .overlay {
                                 Text("Quiz")
                                     .font(.title3).bold()
@@ -108,29 +96,45 @@ struct AIGenerationSetupView: View {
             } header: {
                 Text("DOSTOSUJ")
             } footer: {
-                Text(contentDescription)
+                Text(vm.contentDescription)
             }
             
-            Section("Zakres materiału") {
-                Picker("Zakres materiału", selection: $picker) {
-                    Text("tylko najważniejsze").tag("A")
-                    Text("automatycznie").tag("B")
-                    Text("szczegółowo").tag("C")
-                    Text("własne").tag("D")
-                }
-                .pickerStyle(.inline)
-                .labelsHidden()
-            }
+//            Section("Zakres materiału") {
+//                Picker("Zakres materiału", selection: $picker) {
+//                    Text("tylko najważniejsze").tag("A")
+//                    Text("automatycznie").tag("B")
+//                    Text("szczegółowo").tag("C")
+//                    Text("własne").tag("D")
+//                }
+//                .pickerStyle(.inline)
+//                .labelsHidden()
+//            }
             
-            if picker == "D" {
-                Section("MAKSYMALNA ILOŚĆ FISZEK") {
-                    RoundingSlider(value: $vm.flashcardCount, range: 2...50)
-                }
+//            if picker == "D" {
+//                Section("MAKSYMALNA ILOŚĆ FISZEK") {
+//                    RoundingSlider(value: $vm.flashcardCount, range: 2...50)
+//                }
+//                
+//                Section("MAKSYMALNA ILOŚĆ PYTAŃ") {
+//                    RoundingSlider(value: $vm.questionCount, range: 2...50)
+//                }
                 
-                Section("MAKSYMALNA ILOŚĆ PYTAŃ") {
-                    RoundingSlider(value: $vm.questionCount, range: 2...50)
+            if vm.generateQuiz {
+                Section("QUIZ: NUMBER OF ANSWERS PER QUESTION") {
+                    Slider(value: $vm.quizAnswersPerQuestion, in: 2...6, step: 1) {
+                        Text("Number of answers per question")
+                    } minimumValueLabel: {
+                        Text("2")
+                    } maximumValueLabel: {
+                        Text("6")
+                    }
+                    
+                    Toggle(isOn: $vm.quizAllowsMultipleAnswers) {
+                        Text("Multiple answers?")
+                    }
                 }
             }
+//            }
             
             Section {
                 Picker("Język", selection: $selectedLanguage) {
@@ -150,7 +154,7 @@ struct AIGenerationSetupView: View {
             
             ToolbarItem(placement: .bottomBar) {
                 Button {
-                    onGenerate(vm.importedDocuments, vm.importedImages)
+                    onGenerate(vm.importedDocuments, vm.importedImages, vm.generateFlashcards, vm.quizConfiguration)
                 } label: {
                     HStack {
                         Image(systemName: "sparkles.2")
@@ -182,6 +186,7 @@ struct AIGenerationSetupView: View {
                 message: Text(error.recoverySuggestion ?? "")
             )
         }
+        .tint(.red)
     }
     
     private func handleSelectedPhotos() {
@@ -197,7 +202,7 @@ struct AIGenerationSetupView: View {
     NavigationStack {
         AIGenerationSetupView(
             viewModel: AIGenerationSetupViewModel(),
-            onGenerate: { _,_ in}
+            onGenerate: { _,_,_,_ in}
         )
     }
 }

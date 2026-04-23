@@ -16,20 +16,26 @@ final class AIGenerationProgressViewModel {
     @ObservationIgnored private let importedImages: [ImportedImage]
     @ObservationIgnored private let pdfExtractor: PDFDocumentExtractor
     @ObservationIgnored private let imageExtractor: ImageExtractor
-    @ObservationIgnored private let flashcardGenerator: FlashcardGenerator
+    @ObservationIgnored private let studySetGenerator: StudySetGenerator
     
-    private(set) var generatedFlashcards: [GeneratedFlashcard] = []
+    private(set) var generatedStudySet: GeneratedStudySet?
     
-    init(importedDocuments: [ImportedFile], importedImages: [ImportedImage], pdfExtractor: PDFDocumentExtractor, imageExtractor: ImageExtractor, flashcardGenerator: FlashcardGenerator) {
+    var isGeneratedStudySetEmpty: Bool {
+        guard let generatedStudySet else { return true }
+        return generatedStudySet.flashcards.isEmpty &&
+        generatedStudySet.quiz.isEmpty
+    }
+    
+    init(importedDocuments: [ImportedFile], importedImages: [ImportedImage], pdfExtractor: PDFDocumentExtractor, imageExtractor: ImageExtractor, studySetGenerator: StudySetGenerator) {
         self.importedDocuments = importedDocuments
         self.importedImages = importedImages
         self.pdfExtractor = pdfExtractor
         self.imageExtractor = imageExtractor
-        self.flashcardGenerator = flashcardGenerator
+        self.studySetGenerator = studySetGenerator
     }
     
     func perform() async {
-        generatedFlashcards = []
+        generatedStudySet = nil
         state = .starting
         
         do {
@@ -60,12 +66,8 @@ final class AIGenerationProgressViewModel {
     
     func generate(from documents: [ExtractedDocument]) async throws {
         state = .generating
-        
-        for document in documents {
-            let response = try await flashcardGenerator.generate(for: document)
-            generatedFlashcards.append(contentsOf: response)
-        }
-
+        let response = try await studySetGenerator.generate(for: documents)
+        generatedStudySet = response
         state = .completed
     }
     
