@@ -13,7 +13,7 @@ struct GeneratedStudySet: Hashable {
     let name: String
 //    let category: CategoryEntity //???
     let flashcards: [Flashcard]
-    let quiz: [QuizQuestion]
+    let questions: [QuizQuestion]
 //    let tags: [TagEntity] //???
     
     @Generable
@@ -28,7 +28,7 @@ struct GeneratedStudySet: Hashable {
     @Generable
     struct QuizQuestion: Hashable {
         @Guide(description: "A specific question based on a single fact, definition, or concept found in the source text. Start with: What, Who, When, Where, How, or Define.")
-        let question: String
+        let text: String
         
         @Guide(description: "List of answer options. Exactly as many as requested by the user. Exactly one or more must be correct, as specified.")
         let answers: [Answer]
@@ -36,7 +36,7 @@ struct GeneratedStudySet: Hashable {
         @Generable
         struct Answer: Hashable {
             @Guide(description: "A plausible answer option. Incorrect answers must be believable but clearly wrong based on the source text. Do not use 'all of the above' or 'none of the above'.")
-            let answer: String
+            let text: String
             
             @Guide(description: "True if this answer is correct according to the source text. False otherwise.")
             let isCorrect: Bool

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24512" systemVersion="25D125" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24837" systemVersion="25E246" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="CategoryEntity" representedClassName="CategoryEntity" syncable="YES" codeGenerationType="class">
         <attribute name="accentColorRawValue" optional="YES" attributeType="String"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -14,13 +14,25 @@
         <attribute name="question" optional="YES" attributeType="String"/>
         <relationship name="studySet" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="StudySetEntity" inverseName="flashcards" inverseEntity="StudySetEntity"/>
     </entity>
+    <entity name="QuizAnswerEntity" representedClassName="QuizAnswerEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="isCorrect" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="text" optional="YES" attributeType="String"/>
+        <relationship name="question" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="QuizQuestionEntity" inverseName="answers" inverseEntity="QuizQuestionEntity"/>
+    </entity>
+    <entity name="QuizQuestionEntity" representedClassName="QuizQuestionEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="text" optional="YES" attributeType="String"/>
+        <relationship name="answers" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="QuizAnswerEntity" inverseName="question" inverseEntity="QuizAnswerEntity"/>
+        <relationship name="studySet" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="StudySetEntity" inverseName="questions" inverseEntity="StudySetEntity"/>
+    </entity>
     <entity name="StudySetEntity" representedClassName="StudySetEntity" syncable="YES" codeGenerationType="class">
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="flashcardCount" optional="YES" attributeType="Integer 64" derived="YES" derivationExpression="flashcards.@count" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="questionCount" optional="YES" attributeType="Integer 64" derived="YES" derivationExpression="questions.@count" usesScalarValueType="YES"/>
         <attribute name="tagCount" optional="YES" attributeType="Integer 64" derived="YES" derivationExpression="tags.@count" usesScalarValueType="YES"/>
         <relationship name="category" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CategoryEntity" inverseName="studySets" inverseEntity="CategoryEntity"/>
         <relationship name="flashcards" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="FlashcardEntity" inverseName="studySet" inverseEntity="FlashcardEntity"/>
+        <relationship name="questions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="QuizQuestionEntity" inverseName="studySet" inverseEntity="QuizQuestionEntity"/>
         <relationship name="tags" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TagEntity" inverseName="studySets" inverseEntity="TagEntity"/>
     </entity>
     <entity name="TagEntity" representedClassName="TagEntity" syncable="YES" codeGenerationType="class">

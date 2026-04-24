@@ -23,7 +23,7 @@ final class AIGenerationProgressViewModel {
     var isGeneratedStudySetEmpty: Bool {
         guard let generatedStudySet else { return true }
         return generatedStudySet.flashcards.isEmpty &&
-        generatedStudySet.quiz.isEmpty
+        generatedStudySet.questions.isEmpty
     }
     
     init(importedDocuments: [ImportedFile], importedImages: [ImportedImage], pdfExtractor: PDFDocumentExtractor, imageExtractor: ImageExtractor, studySetGenerator: StudySetGenerator) {

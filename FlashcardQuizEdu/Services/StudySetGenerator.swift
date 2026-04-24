@@ -80,11 +80,11 @@ struct StudySetGenerator {
             }
         }
         
-        let generatedStudySet = GeneratedStudySet(name: "", flashcards: flashcards, quiz: quiz)
+        let generatedStudySet = GeneratedStudySet(name: "", flashcards: flashcards, questions: quiz)
         guard let firstChunk = chunks.first, !flashcards.isEmpty || !quiz.isEmpty else { return generatedStudySet }
         guard let suggestedName = try? await generateName(for: firstChunk) else { return generatedStudySet }
         
-        return GeneratedStudySet(name: suggestedName, flashcards: flashcards, quiz: quiz)
+        return GeneratedStudySet(name: suggestedName, flashcards: flashcards, questions: quiz)
     }
     
     private func generateName(for chunk: String) async throws -> String {
