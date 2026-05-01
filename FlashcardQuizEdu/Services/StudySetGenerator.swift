@@ -11,7 +11,7 @@ import FoundationModels
 struct StudySetGenerator {
     private let flashcardRequest: GenerationRequest?
     private let quizRequest: GenerationRequest?
-    private let studySetNamePrompt: String
+    private let studySetNameRequest: GenerationRequest?
     
     private let chunker: DocumentChunker?
     private let maxSplitDepth: Int
@@ -23,7 +23,7 @@ struct StudySetGenerator {
         
         self.flashcardRequest = generateFlashcards ? Self.makeFlashcardRequest() : nil
         self.quizRequest = quizConfiguration.map(Self.makeQuizRequest)
-        self.studySetNamePrompt = Self.makeStudySetNamePrompt()
+        self.studySetNameRequest = Self.makeStudySetNameRequest()
         
         let chunkerInstructions: String?
         let chunkerPrompt: String?
@@ -88,8 +88,11 @@ struct StudySetGenerator {
     }
     
     private func generateName(for chunk: String) async throws -> String {
-        let prompt = studySetNamePrompt.appending(chunk)
-        let response = try await LanguageModelSession().respond(to: prompt)
+        guard let studySetNameRequest else { return "" }
+        let instructions = studySetNameRequest.instructions
+        let prompt = studySetNameRequest.prompt.appending(chunk)
+        let session = LanguageModelSession(instructions: instructions)
+        let response = try await session.respond(to: prompt)
         return response.content
     }
     
@@ -160,17 +163,15 @@ struct StudySetGenerator {
             prompt: """
             Generate quiz questions based ONLY on the text below.
 
-            CONFIGURATION:
-            - Answers per question: \(config.answersPerQuestion)
-            - Multiple correct answers allowed: \(config.allowsMultipleCorrectAnswers)
-
             RULES:
             - Use ONLY information explicitly stated in the text
             - DO NOT use prior knowledge
             - DO NOT infer or guess missing information
             - Each question tests exactly one fact, definition, term, or relationship
-            - Each question must have exactly \(config.answersPerQuestion) answer options
-            - \(config.allowsMultipleCorrectAnswers ? "At least one " : "Exactly one ") answer must be correct
+            - Each question must have exactly \(config.answersPerQuestion) short, distinct answer options
+            - If the text does not contain enough distinct information to create \(config.answersPerQuestion) unique answer options for a question, use as many as the text supports (minumum 2)
+            - \(config.allowsMultipleCorrectAnswers ? "At least one answer must be correct. More than one answer must be correct" : "Exactly one answer must be correct")
+            \(config.allowsMultipleCorrectAnswers ? "- If a correct answer contains multiple facts joined by 'and', split it into separate answer options" : "")
             - Incorrect answers must be plausible but clearly wrong based on the text
             - Do not use 'all of the above' or 'none of the above' as answer options
             - Questions must be specific and answerable solely from the text
@@ -181,18 +182,15 @@ struct StudySetGenerator {
         )
     }
     
-    private static func makeStudySetNamePrompt() -> String {
-        """
-        Generate a short name for a study set based on the text below.
-
-        RULES:
-        - Maximum 3 words
-        - Descriptive and specific to the content
-        - No punctuation at the end
-        - Output language should match the language of the provided text
-
-        TEXT:    
-        """
+    private static func makeStudySetNameRequest() -> GenerationRequest {
+        GenerationRequest(
+            instructions: "You are an expert at summarizing text into 3 words or less.",
+            prompt: """
+            Summarize the following text in 3 words or less. Match the language of the text. No punctuation.
+            
+            TEXT:
+            """
+        )
     }
     
     struct QuizConfiguration {
