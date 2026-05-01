@@ -21,12 +21,8 @@ struct AIGenerationSetupView: View {
     @State private var failedFiles: [FailedImport] = [] // couldn't animate without
     let sectionSpacing: CGFloat = 15
     
-//    @State private var picker = "B"
+//    @State private var picker = "B" // implement later
     @State private var selectedLanguage = "en"
-//    @State private var generateFlashcards = true
-//    @State private var generateQuiz = false
-//    @State private var quizQuestionAnswerCount = 4.0
-//    @State private var quizAllowsMultipleAnswers = false
     
     init(viewModel: AIGenerationSetupViewModel, onGenerate: @escaping ([ImportedFile], [ImportedImage], Bool, StudySetGenerator.QuizConfiguration?) -> Void) {
         self.vm = viewModel
@@ -35,7 +31,7 @@ struct AIGenerationSetupView: View {
     
     var body: some View {
         Form {
-            Section("MATERIAŁY ŹRÓDŁOWE") {
+            Section("DODAJ MATERIAŁY") {
                 Button("Dodaj pliki", systemImage: "paperclip") {
                     showingImporter = true
                 }
@@ -94,7 +90,7 @@ struct AIGenerationSetupView: View {
                 .listRowInsets(.init())
                 .listRowBackground(Color.clear)
             } header: {
-                Text("DOSTOSUJ")
+                Text("CO WYGENEROWAĆ")
             } footer: {
                 Text(vm.contentDescription)
             }
@@ -109,38 +105,50 @@ struct AIGenerationSetupView: View {
 //                .pickerStyle(.inline)
 //                .labelsHidden()
 //            }
-            
-//            if picker == "D" {
-//                Section("MAKSYMALNA ILOŚĆ FISZEK") {
-//                    RoundingSlider(value: $vm.flashcardCount, range: 2...50)
-//                }
-//                
-//                Section("MAKSYMALNA ILOŚĆ PYTAŃ") {
-//                    RoundingSlider(value: $vm.questionCount, range: 2...50)
-//                }
                 
             if vm.generateQuiz {
-                Section("QUIZ: NUMBER OF ANSWERS PER QUESTION") {
-                    Slider(value: $vm.quizAnswersPerQuestion, in: 2...6, step: 1) {
-                        Text("Number of answers per question")
-                    } minimumValueLabel: {
-                        Text("2")
-                    } maximumValueLabel: {
-                        Text("6")
+                Section("USTAWIENIA QUIZU") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Liczba odpowiedzi na pytanie")
+                                .font(.subheadline)
+                            
+                            Spacer()
+                            
+                            Text("\(Int(vm.quizAnswersPerQuestion))")
+                                .bold()
+                                .contentTransition(.numericText(value: vm.quizAnswersPerQuestion))
+                                .animation(.default, value: vm.quizAnswersPerQuestion)
+                        }
+                        .foregroundStyle(.secondary)
+
+                        Slider(value: $vm.quizAnswersPerQuestion, in: 2...6, step: 1) {
+                            Text("Liczba odpowiedzi na pytanie")
+                        }
                     }
                     
                     Toggle(isOn: $vm.quizAllowsMultipleAnswers) {
-                        Text("Multiple answers?")
+                        Text("Wiele poprawnych odpowiedzi")
                     }
                 }
             }
-//            }
             
-            Section {
+            Section("JĘZYK GENEROWANIA") {
                 Picker("Język", selection: $selectedLanguage) {
                     ForEach(Bundle.main.localizations, id: \.self) { language in
                         Text(language).tag(language)
                     }
+                }
+            }
+
+            if let foundationModelsUnavailableMessage = vm.foundationModelsUnavailableMessage {
+                Section {
+                    Label(foundationModelsUnavailableMessage, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                } header: {
+                    Text("DOSTĘPNOŚĆ APPLE INTELLIGENCE")
+                } footer: {
+                    Text("Generowanie wymaga dostępnego modelu Foundation Models na tym urządzeniu.")
                 }
             }
         }

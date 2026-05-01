@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import FoundationModels
 import UniformTypeIdentifiers
 import _PhotosUI_SwiftUI
 
@@ -21,16 +22,16 @@ class AIGenerationSetupViewModel {
     
     var error: ImportError?
     
-    var flashcardCount = 5.0
-    var questionCount = 5.0
+//    var flashcardCount = 5.0
+//    var questionCount = 5.0
     
-    var flashcardCountRounded: Int {
-        Int(flashcardCount.rounded())
-    }
-    
-    var questionCountRounded: Int {
-        Int(questionCount.rounded())
-    }
+//    var flashcardCountRounded: Int {
+//        Int(flashcardCount.rounded())
+//    }
+//    
+//    var questionCountRounded: Int {
+//        Int(questionCount.rounded())
+//    }
     
     var generateFlashcards = false
     var generateQuiz = false
@@ -50,11 +51,27 @@ class AIGenerationSetupViewModel {
         
         return "Wybierz co chcesz wygenerować."
     }
+
+    var foundationModelsUnavailableMessage: String? {
+        switch SystemLanguageModel.default.availability {
+        case .available:
+            return nil
+        case .unavailable(.deviceNotEligible):
+            return "To urządzenie nie obsługuje Apple Intelligence."
+        case .unavailable(.appleIntelligenceNotEnabled):
+            return "Włącz Apple Intelligence w Ustawieniach, aby użyć generowania AI."
+        case .unavailable(.modelNotReady):
+            return "Model AI nie jest jeszcze gotowy na tym urządzeniu. Spróbuj ponownie za chwilę."
+        case .unavailable:
+            return "Foundation Models jest obecnie niedostępne na tym urządzeniu."
+        }
+    }
     
     var isGenerationDisabled: Bool {
         (importedDocuments.isEmpty && importedImages.isEmpty) ||
 //        (flashcardCountRounded == 0 && questionCountRounded == 0) ||
-        ( !generateFlashcards && !generateQuiz)
+        (!generateFlashcards && !generateQuiz) ||
+        foundationModelsUnavailableMessage != nil
     }
     
     var quizConfiguration: StudySetGenerator.QuizConfiguration? {
