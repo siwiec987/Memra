@@ -8,6 +8,8 @@
 import CoreData
 import Foundation
 
+// TODO: UPDATE SNAPSHOT METHOD!!!!
+
 @Observable
 @MainActor
 class EditStudySetViewModel: Identifiable {
@@ -17,6 +19,8 @@ class EditStudySetViewModel: Identifiable {
     
     private(set) var categories: [CategoryEntity] = []
     private(set) var tags: [TagEntity] = []
+    private(set) var flashcards: [FlashcardEntity] = []
+    private(set) var quiz: [QuizQuestionEntity] = []
     
     var newTagName = ""
     
@@ -63,9 +67,24 @@ class EditStudySetViewModel: Identifiable {
                 return flashcard
             }
             
+            let questions = generatedStudySet.questions.map { question in
+                let mappedQuestion = QuizQuestionEntity(context: editContext)
+                
+                let mappedAnswers = question.answers.map { answer in
+                    let mappedAnswer = QuizAnswerEntity(context: editContext)
+                    mappedAnswer.text = answer.text
+                    mappedAnswer.isCorrect = answer.isCorrect
+                    return mappedAnswer
+                }
+                
+                mappedQuestion.text = question.text
+                mappedQuestion.answers = NSSet(array: mappedAnswers)
+                return mappedQuestion
+            }
+            
             selectedStudySet.name = generatedStudySet.name
             selectedStudySet.flashcards = NSSet(array: flashcards)
-            // TODO: TRZEBA DODAĆ QUIZ DO STUDYSETENTITY MORDKOOOOOOOOO
+            selectedStudySet.questions = NSSet(array: questions)
         }
         
         bootstrapState(defaultCategoryID: categoryID)
@@ -108,6 +127,8 @@ class EditStudySetViewModel: Identifiable {
         studySetName = selectedStudySet.wrappedName
         selectedCategory = selectedStudySet.category
         selectedTagIDs = Set(selectedStudySet.tagsSet.map { $0.objectID })
+        flashcards = Array(selectedStudySet.flashcardSet)
+        quiz = Array(selectedStudySet.questionSet)
         takeSnapshot()
     }
     
@@ -144,6 +165,7 @@ class EditStudySetViewModel: Identifiable {
         selectedStudySet.name = studySetName.trimmed()
         selectedStudySet.category = selectedCategory
         selectedStudySet.tags = NSSet(array: tags.filter { selectedTagIDs.contains($0.objectID) })
+        selectedStudySet.flashcards = NSSet(array: flashcards)
         
         createdTags.forEach { tag in
             if !selectedTagIDs.contains(tag.objectID) {
@@ -177,6 +199,26 @@ class EditStudySetViewModel: Identifiable {
         createdTags.insert(newTag)
         selectedTagIDs.insert(newTag.objectID)
         newTagName = ""
+    }
+    
+    func deleteFlashcards(at indices: IndexSet) {
+        indices.sorted(by: >).forEach {
+            editContext.delete(flashcards[$0])
+            flashcards.remove(at: $0)
+        }
+    }
+    
+    func newFlashcard(question: String, answer: String) {
+        let questionTrimmed = question.trimmed()
+        let answerTrimmed = answer.trimmed()
+        
+        guard !questionTrimmed.isEmpty else { return }
+        guard !answerTrimmed.isEmpty else { return }
+        
+        let flashcard = FlashcardEntity(context: editContext)
+        flashcard.wrappedQuestion = questionTrimmed
+        flashcard.wrappedAnswer = answerTrimmed
+        flashcards.append(flashcard)
     }
     
     private struct StudySetSnapshot {

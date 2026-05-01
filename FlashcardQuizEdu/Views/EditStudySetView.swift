@@ -43,22 +43,44 @@ struct EditStudySetView: View {
             }
             
             Section {
-                HStack {
-                    TextField("Nowy tag", text: $vm.newTagName)
-                        .onSubmit {
-                            withAnimation(tagAnimation, vm.addTag)
-                        }
-                    
-                    Button {
-                        withAnimation(tagAnimation) {
-                            vm.addTag()
-                        }
-                    } label: {
-                        Image(systemName: "plus")
-                            .symbolVariant(.circle.fill)
-                    }
+                EditorNavigationRow(
+                    title: "Fiszki",
+                    systemImage: "square.stack.3d.up.fill",
+                    count: vm.flashcards.count
+                ) {
+                    EditFlashcardsView(
+                        title: "Fiszki",
+                        flashcards: vm.flashcards,
+                        onDelete: vm.deleteFlashcards,
+                        onAdd: vm.newFlashcard
+                    )
+                }
+
+                EditorNavigationRow(
+                    title: "Quiz",
+                    systemImage: "checklist",
+                    count: vm.quiz.count
+                ) {
+                    EditQuizQuestionsView(
+                        title: "Quiz",
+                        quiz: vm.quiz,
+                        onDelete: {_ in}
+                    )
+//                    .tint(vm.selectedCategory?.accentColor.value)
+
+                }
+            }
+            
+            Section {
+                HStack(spacing: 15) {
+                    Button("Dodaj tag", systemImage: "plus.circle.fill", action: addTag)
+                    .labelStyle(.iconOnly)
+                    .font(.title2)
                     .tint(.green)
                     .disabled(vm.newTagNameTrimmed.isEmpty)
+                    
+                    TextField("Nowy tag", text: $vm.newTagName)
+                        .onSubmit(addTag)
                 }
                 
                 if !vm.tags.isEmpty {
@@ -103,15 +125,47 @@ struct EditStudySetView: View {
         .tint(.none)
         .interactiveDismissDisabled(vm.hasUnsavedChanges)
     }
+    
+    private func addTag() {
+        withAnimation(tagAnimation, vm.addTag)
+    }
+    
+    private struct EditorNavigationRow<Destination: View>: View {
+        let title: String
+        let systemImage: String
+        let count: Int
+        let destination: () -> Destination
+        
+        var body: some View {
+            NavigationLink {
+                destination()
+            } label: {
+                Label {
+                    HStack(alignment: .center) {
+                        Text(title)
+                        Spacer()
+                        Text("\(count)")
+                            .foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: systemImage)
+                }
+            }
+        }
+    }
 }
 
 #Preview {
     @Previewable @State var isPresented = true
     
     let persistence = PersistenceController.preview
-    let vm = EditStudySetViewModel(persistence: persistence, creatingIn: nil)
+    let request = StudySetEntity.fetchRequest()
+    request.sortDescriptors = [NSSortDescriptor(key: "flashcardCount", ascending: false)]
+    request.fetchLimit = 1
+    let studySet = try! persistence.viewContext.fetch(request).first!
+    let vm = try! EditStudySetViewModel(persistence: persistence, editing: studySet.objectID)
     
-    NavigationStack {
+    return NavigationStack {
         Circle().sheet(isPresented: $isPresented) {
             NavigationStack {
                 EditStudySetView(viewModel: vm)
