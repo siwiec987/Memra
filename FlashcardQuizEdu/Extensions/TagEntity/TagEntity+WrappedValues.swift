@@ -7,6 +7,7 @@
 
 extension TagEntity {
     var wrappedName: String {
-        name ?? ""
+        get { name ?? "" }
+        set { name = newValue.trimmed() }
     }
 }

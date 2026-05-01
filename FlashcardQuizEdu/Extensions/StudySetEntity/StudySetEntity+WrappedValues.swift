@@ -8,10 +8,18 @@
 extension StudySetEntity {
     var wrappedName: String {
         get { name ?? "" }
-        set { name = newValue }
+        set { name = newValue.trimmed() }
     }
 
     var tagsSet: Set<TagEntity> {
         (tags as? Set<TagEntity>) ?? []
+    }
+    
+    var flashcardSet: Set<FlashcardEntity> {
+        (flashcards as? Set<FlashcardEntity>) ?? []
+    }
+    
+    var questionSet: Set<QuizQuestionEntity> {
+        (questions as? Set<QuizQuestionEntity>) ?? []
     }
 }

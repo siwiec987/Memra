@@ -7,10 +7,12 @@
 
 extension FlashcardEntity {
     var wrappedQuestion: String {
-        question ?? ""
+        get { question ?? "" }
+        set { question = newValue.trimmed() }
     }
 
     var wrappedAnswer: String {
-        answer ?? ""
+        get { answer ?? "" }
+        set { answer = newValue.trimmed() }
     }
 }

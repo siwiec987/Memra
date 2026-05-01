@@ -8,7 +8,7 @@
 extension CategoryEntity {
     var wrappedName: String {
         get { name ?? "" }
-        set { name = newValue }
+        set { name = newValue.trimmed() }
     }
 
     var wrappedSystemIcon: String {
